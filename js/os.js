@@ -362,6 +362,8 @@ const os = (() => {
       });
     });
     document.getElementById("btn-leave").addEventListener("click", leave);
+    const sitBtn = document.getElementById("btn-sitdown");
+    if (sitBtn) sitBtn.addEventListener("click", () => { SFX.click(); boot(); });
     document.getElementById("tb-tickets").addEventListener("click", () => openApp("helpdesk"));
     // klik na plochu zavrie start menu (ako v reálnom OS)
     document.getElementById("desktop-view").addEventListener("mousedown", (e) => {
