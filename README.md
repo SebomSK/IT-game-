@@ -8,6 +8,8 @@ Inspired by Hack Vantage, but **free, in English, with a story and without a rea
 
 [Play TicketQuest in your browser](https://sebomsk.github.io/IT-game-/)
 
+[Privacy notice](privacy.html)
+
 ## Game in one sentence
 
 Join PIXL Corp, the boss asks for your name, you get tickets, you solve them in a simulated Windows Server, fill out the curriculum in the SOP Binder, progress on the career ladder — and night after night you discover that something is happening in the company...

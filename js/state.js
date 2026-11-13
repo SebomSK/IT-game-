@@ -1,6 +1,10 @@
 /* ===== TicketQuest — stav hry v2 + ukladanie ===== */
 
 const SAVE_KEY = "ticketquest-save-v2";
+const MAX_SAVE_BYTES = 2 * 1024 * 1024;
+const MAX_SAVE_ARRAY_LENGTH = 10000;
+const MAX_SAVED_TICKETS = 100;
+const MAX_SAVE_STRING_LENGTH = 8192;
 
 const state = {
   player: { name: "", login: "", salary: 0 },
@@ -87,13 +91,16 @@ function saveGame() {
 function loadGame() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return false;
+    if (!raw || raw.length > MAX_SAVE_BYTES) return false;
     const data = JSON.parse(raw);
-    // hĺbkové zlúčenie — aby staré save-ky nestratili nové polia
-    deepMerge(state, data);
+    if (!isPlainObject(data) || !isPlainObject(data.player) || !Number.isFinite(data.xp)) return false;
+    const candidate = JSON.parse(JSON.stringify(state));
+    deepMerge(candidate, data);
     // bezpečnostná sanitizácia vstupov zo save-u (ochrana pred HTML injection)
-    state.player.name = sanitizeName(state.player.name);
-    state.player.login = sanitizeLogin(state.player.login);
+    candidate.player.name = sanitizeName(candidate.player.name);
+    candidate.player.login = sanitizeLogin(candidate.player.login);
+    for (const key of Object.keys(state)) delete state[key];
+    Object.assign(state, candidate);
     return true;
   } catch (e) { return false; }
 }
@@ -116,16 +123,140 @@ function sanitizeLogin(v) {
   return v.toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 32);
 }
 
+function isPlainObject(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+function sanitizeSaveValue(value, depth = 0) {
+  if (depth > 24) return undefined;
+  if (typeof value === "string") return value.slice(0, MAX_SAVE_STRING_LENGTH);
+  if (typeof value === "number") return Number.isFinite(value) ? value : undefined;
+  if (typeof value === "boolean" || value === null) return value;
+  if (Array.isArray(value)) {
+    return value.slice(0, MAX_SAVE_ARRAY_LENGTH)
+      .map((item) => sanitizeSaveValue(item, depth + 1))
+      .filter((item) => item !== undefined);
+  }
+  if (!isPlainObject(value)) return undefined;
+
+  const result = {};
+  for (const key of Object.keys(value)) {
+    if (["__proto__", "constructor", "prototype"].includes(key)) continue;
+    const item = sanitizeSaveValue(value[key], depth + 1);
+    if (item !== undefined) result[key] = item;
+  }
+  return result;
+}
+
+function sanitizeSaveArray(key, current, incoming) {
+  const isTicketList = key === "dorisTickets" || key === "grindTickets";
+  const maxLength = isTicketList ? MAX_SAVED_TICKETS : MAX_SAVE_ARRAY_LENGTH;
+  const values = incoming.slice(0, maxLength)
+    .map((item) => sanitizeSaveValue(item))
+    .filter((item) => item !== undefined);
+
+  if (isTicketList) return values.filter((ticket) => {
+    if (!isPlainObject(ticket) || !Number.isSafeInteger(ticket.id) ||
+        typeof ticket.from !== "string" || typeof ticket.subject !== "string" ||
+        typeof ticket.body !== "string" || !Array.isArray(ticket.sop) ||
+        !ticket.sop.every((line) => typeof line === "string")) return false;
+    if (key === "dorisTickets") return ticket.doris === true;
+    return typeof ticket.kind === "string" && isPlainObject(ticket.params);
+  });
+
+  const sample = current.find((item) => item !== null && item !== undefined);
+  if (sample !== undefined) {
+    if (typeof sample === "number") return values.filter(Number.isFinite);
+    if (typeof sample === "string") return values.filter((item) => typeof item === "string");
+    if (isPlainObject(sample)) return values.filter(isPlainObject);
+    return [];
+  }
+  if (["resolved", "escalated", "taken", "arrived"].includes(key)) {
+    return values.filter(Number.isSafeInteger);
+  }
+  if (["achievements", "departed", "blocked"].includes(key)) {
+    return values.filter((item) => typeof item === "string");
+  }
+  return [];
+}
+
+function sanitizeDynamicMapEntry(mapName, key, value) {
+  if (["__proto__", "constructor", "prototype"].includes(key)) return undefined;
+  if (["timestamp", "boolean", "note", "phoneState"].includes(mapName) && !/^\d{1,10}$/.test(key)) return undefined;
+  if (mapName === "timestamp" && Number.isFinite(value)) return Math.max(0, Math.min(value, 8640000000000000));
+  if (mapName === "boolean" && typeof value === "boolean") return value;
+  if (mapName === "note" && typeof value === "string") return value.slice(0, MAX_SAVE_STRING_LENGTH);
+  if (mapName === "phoneState" && isPlainObject(value) &&
+      Number.isSafeInteger(value.step) && Number.isSafeInteger(value.mistakes)) {
+    return {
+      step: Math.max(0, Math.min(value.step, 1000)),
+      mistakes: Math.max(0, Math.min(value.mistakes, 10000)),
+    };
+  }
+  if (!isPlainObject(value)) return undefined;
+  if (mapName === "users" && /^[a-z0-9._-]{1,32}$/.test(key)) {
+    return {
+      active: value.active === true,
+      changed: value.changed === true,
+      desc: typeof value.desc === "string" ? value.desc.slice(0, MAX_SAVE_STRING_LENGTH) : key,
+    };
+  }
+  if (mapName === "wds" && /^[A-Z0-9-]{1,32}$/.test(key)) {
+    return {
+      deployed: value.deployed === true,
+      joined: value.joined === true,
+      rebooted: value.rebooted === true,
+    };
+  }
+  if (mapName === "mailbox" && /^[a-z0-9._-]{1,32}$/.test(key) &&
+      Number.isFinite(value.used) && Number.isFinite(value.quota)) {
+    return {
+      used: Math.max(0, Math.min(value.used, 1000000)),
+      quota: Math.max(0, Math.min(value.quota, 1000000)),
+    };
+  }
+  return undefined;
+}
+
 function deepMerge(target, src) {
-  const FORBIDDEN = new Set(["__proto__", "constructor", "prototype"]);
-  for (const k of Object.keys(src)) {
-    if (FORBIDDEN.has(k)) continue; // protection against prototype pollution from save
-    if (src[k] && typeof src[k] === "object" && !Array.isArray(src[k]) && target[k]) {
-      deepMerge(target[k], src[k]);
-    } else {
-      target[k] = src[k];
+  function merge(targetObject, sourceObject, dynamicMap = null) {
+    if (!isPlainObject(targetObject) || !isPlainObject(sourceObject)) return;
+    const forbidden = new Set(["__proto__", "constructor", "prototype"]);
+    for (const k of Object.keys(sourceObject)) {
+      if (forbidden.has(k)) continue;
+      const incoming = sourceObject[k];
+      const current = targetObject[k];
+
+      if (Array.isArray(current)) {
+        if (Array.isArray(incoming)) targetObject[k] = sanitizeSaveArray(k, current, incoming);
+      } else if (isPlainObject(current)) {
+        if (isPlainObject(incoming)) {
+          const nextDynamicMap = {
+            users: "users", wds: "wds", mailbox: "mailbox",
+            takenAt: "timestamp", deadlines: "timestamp",
+            overdue: "boolean", phoneDone: "boolean",
+            notes: "note", phoneState: "phoneState",
+          }[k] || null;
+          merge(current, incoming, nextDynamicMap);
+        }
+      } else if (current === null) {
+        if (incoming === null || ["string", "number", "boolean"].includes(typeof incoming)) {
+          const safe = sanitizeSaveValue(incoming);
+          if (safe !== undefined) targetObject[k] = safe;
+        }
+      } else if (typeof incoming === typeof current) {
+        const safe = sanitizeSaveValue(incoming);
+        if (safe !== undefined) targetObject[k] = safe;
+      } else if (current === undefined && dynamicMap) {
+        const safe = sanitizeDynamicMapEntry(dynamicMap, k, incoming);
+        if (safe !== undefined) targetObject[k] = safe;
+      }
     }
   }
+
+  merge(target, src);
 }
 
 function resetGame() {
