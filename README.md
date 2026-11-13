@@ -89,3 +89,13 @@ python -m http.server 8000   # or
 npx serve .
 ```
 Production: Cloudflare Pages (free).
+
+## Contact
+
+Discord: `realbigrussian`
+
+For support, password resets, or to report issues, message me on Discord. I can help with password resets, account issues, or any questions about the game.
+
+----
+
+*This README was translated from Slovak to English. The game itself remains free, offline, and playable in any browser without installation.*
