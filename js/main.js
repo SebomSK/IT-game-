@@ -1,4 +1,4 @@
-/* ===== TicketQuest — UI, game logic, wiring ===== */
+/* ===== TicketQuest â€” UI, game logic, wiring ===== */
 
 /* ---------- terminal ---------- */
 const termEl = document.getElementById("terminal");
@@ -58,7 +58,7 @@ function newInputRow() {
 }
 
 function banner() {
-  termPrint(`Microsoft Windows [Version 10.0.26100.1]  —  ${HOST} (SIMULATED)`, "t-dim");
+  termPrint(`Microsoft Windows [Version 10.0.26100.1]  â€”  ${HOST} (SIMULATED)`, "t-dim");
   termPrint("(c) PIXL Corp. All rights... probably reserved.", "t-dim");
   termPrint("");
   termPrint(`Welcome to the server, ${state.player.name || "colleague"}. Type 'help' for commands.`, "t-warn");
@@ -66,11 +66,11 @@ function banner() {
   termPrint("");
 }
 
-/* ---------- toasts (delegate → Win11 notifications v hre) ---------- */
+/* ---------- toasts (delegate â†’ Win11 notifications v hre) ---------- */
 function toast(msg, cls = "") {
   const inGame = !document.getElementById("game")?.classList.contains("hidden");
   if (inGame && typeof notify === "function" && !document.getElementById("game").classList.contains("hidden")) {
-    const icon = cls.includes("danger") ? "⏰" : cls.includes("warn") ? "⚠️" : msg.includes("📥") ? "🎫" : msg.includes("🎉") ? "🎉" : "💬";
+    const icon = cls.includes("danger") ? "â°" : cls.includes("warn") ? "âš ï¸" : msg.includes("ðŸ“¥") ? "ðŸŽ«" : msg.includes("ðŸŽ‰") ? "ðŸŽ‰" : "ðŸ’¬";
     notify({ icon, title: "PIXL Corp IT", body: msg, cls: cls.includes("danger") ? "n-danger" : "" });
     return;
   }
@@ -98,7 +98,7 @@ function renderTickets() {
   for (const t of all) {
     if (!t || typeof t !== "object") continue;
     if (!ticketVisible(t)) continue;
-    // vyriešené grind tickety nezobrazuj — zoznam by rástl donekonečna
+    // vyrieÅ¡enÃ© grind tickety nezobrazuj â€” zoznam by rÃ¡stl donekoneÄna
     if (t.grind && (state.resolved.includes(t.id) || state.escalated.includes(t.id))) continue;
     // HelpDesk queue filter (chips)
     const f = (typeof hdFilter !== "undefined" && hdFilter) || "all";
@@ -113,14 +113,14 @@ function renderTickets() {
     const ticketId = Number.isSafeInteger(t.id) ? t.id : "?";
     const card = document.createElement("div");
     card.className = "ticket-card" + (resolved ? " resolved" : "");
-    const phoneTag = t.phone ? " 📞" : "";
+    const phoneTag = t.phone ? " ðŸ“ž" : "";
     const status = resolved
-      ? "✔ RESOLVED" + (state.notes[t.id] ? " 📝" : "")
+      ? "âœ” RESOLVED" + (state.notes[t.id] ? " ðŸ“" : "")
       : escalated
-      ? "⬆ ESCALATED (T2)"
+      ? "â¬† ESCALATED (T2)"
       : taken
-      ? `${slaOverdue(t) ? "⏰ OVER SLA — " : ""}✋ Assigned to you${phoneTag}`
-      : `🆕 New${phoneTag}` + (t.slaMin ? ` (SLA ${t.slaMin} min)` : "");
+      ? `${slaOverdue(t) ? "â° OVER SLA â€” " : ""}âœ‹ Assigned to you${phoneTag}`
+      : `ðŸ†• New${phoneTag}` + (t.slaMin ? ` (SLA ${t.slaMin} min)` : "");
     card.innerHTML = `
       <div class="tc-head">
         <span class="ticket-id">#${ticketId}</span>
@@ -148,7 +148,7 @@ function showDetail(id) {
   prioEl.textContent = priority;
   prioEl.className = "prio " + priority.toLowerCase();
   document.getElementById("td-from").textContent = t.from;
-  document.getElementById("td-body").textContent = "„" + String(t.body ?? "").replaceAll("{PLAYER}", state.player.name || "") + "“";
+  document.getElementById("td-body").textContent = "â€ž" + String(t.body ?? "").replaceAll("{PLAYER}", state.player.name || "") + "â€œ";
   const sopList = document.getElementById("td-sop");
   sopList.replaceChildren();
   (Array.isArray(t.sop) ? t.sop.slice(0, 20) : []).forEach((line) => {
@@ -160,7 +160,7 @@ function showDetail(id) {
   const callBtn = document.getElementById("btn-call");
   if (t.phone) {
     callBtn.classList.remove("hidden");
-    callBtn.textContent = state.phoneDone[t.id] ? "📞 CALL DONE ✔" : "📞 CALL THE USER";
+    callBtn.textContent = state.phoneDone[t.id] ? "ðŸ“ž CALL DONE âœ”" : "ðŸ“ž CALL THE USER";
     callBtn.disabled = state.phoneDone[t.id];
     callBtn.onclick = () => phoneOpen(t.id);
   } else {
@@ -169,13 +169,13 @@ function showDetail(id) {
 
   const btn = document.getElementById("btn-take");
   if (state.resolved.includes(t.id) || state.escalated.includes(t.id)) {
-    btn.textContent = state.escalated.includes(t.id) ? "⬆ ESCALATED — T2 HANDLES IT" : "✔ RESOLVED";
+    btn.textContent = state.escalated.includes(t.id) ? "â¬† ESCALATED â€” T2 HANDLES IT" : "âœ” RESOLVED";
     btn.disabled = true;
   } else if (state.taken.includes(t.id)) {
-    btn.textContent = `✋ TAKEN ${fmtSla(t)} — SOLVE IT IN THE TERMINAL →`;
+    btn.textContent = `âœ‹ TAKEN ${fmtSla(t)} â€” SOLVE IT IN THE TERMINAL â†’`;
     btn.disabled = true;
   } else {
-    btn.textContent = "✋ TAKE TICKET";
+    btn.textContent = "âœ‹ TAKE TICKET";
     btn.disabled = false;
     btn.onclick = () => {
       if (!state.taken.includes(t.id)) {
@@ -184,7 +184,7 @@ function showDetail(id) {
         startSla(t);
         saveGame();
         termPrint(`[HELPDESK] Ticket #${t.id} assigned to you${t.slaMin ? ` (SLA ${t.slaMin} min${state.chill ? ", chill mode ON" : ""})` : ""}.`, "t-ok");
-        if (t.phone) toast("📞 Tip: call the user before you start guessing!", "t-warn");
+        if (t.phone) toast("ðŸ“ž Tip: call the user before you start guessing!", "t-warn");
       }
       renderTickets();
       showDetail(t.id);
@@ -222,7 +222,7 @@ function renderTopbar() {
   document.getElementById("xp-fill").style.width = progress + "%";
   document.getElementById("xp-label").textContent = `${state.xp} XP${next ? ` / ${next.minXp}` : ""}`;
   document.getElementById("salary-label").textContent =
-    rank.salary > 0 ? `💰 $${rank.salary}/mo` : "☕ intern (unpaid)";
+    rank.salary > 0 ? `ðŸ’° $${rank.salary}/mo` : "â˜• intern (unpaid)";
   renderTopbarAvatar();
 }
 
@@ -239,7 +239,7 @@ function arriveTicket(t) {
   state.arrived.push(t.id);
   saveGame();
   SFX.ping();
-  toast(`📥 New ticket #${t.id} — ${t.subject}`, "toast-ticket");
+  toast(`ðŸ“¥ New ticket #${t.id} â€” ${t.subject}`, "toast-ticket");
   renderTickets();
 }
 
@@ -278,7 +278,7 @@ function maybeSpawnDoris(t) {
     check: (srv) => srv.users.doris.active === true && srv.users.doris.changed === true,
   });
   saveGame();
-  toast(`📥 Doris just sent ticket #${id}. Unexpected. 🙃`, "toast-ticket");
+  toast(`ðŸ“¥ Doris just sent ticket #${id}. Unexpected. ðŸ™ƒ`, "toast-ticket");
   SFX.ping();
   renderTickets();
 }
@@ -304,7 +304,7 @@ function submitNotes() {
     if (note.length >= 40) {
       state.xp += 10;
       state.stats.notesGood++;
-      termPrint("📝 Good resolution note (+10 XP). Documentation counts!", "t-ok");
+      termPrint("ðŸ“ Good resolution note (+10 XP). Documentation counts!", "t-ok");
     }
   }
   saveGame();
@@ -325,7 +325,7 @@ function afterProgressTick(t) {
   ) {
     setTimeout(() => {
       reviewShow(() => {
-        termPrint("[HR] Performance review done. The A+ exam is unlocked (🎓 Settings app or taskbar).", "t-ok");
+        termPrint("[HR] Performance review done. The A+ exam is unlocked (ðŸŽ“ Settings app or taskbar).", "t-ok");
         renderQuizButton();
       });
     }, 600);
@@ -334,7 +334,7 @@ function afterProgressTick(t) {
 
   const desired = desiredRank();
   if (desired > state.rank && state.rank === 0) {
-    // first shift done → night mystery + promotion
+    // first shift done â†’ night mystery + promotion
     cutscene.play([SCENE_NIGHT], () => {
       night.open(() => {
         cutscene.play([SCENE_PROMO_T1], () => {
@@ -346,10 +346,10 @@ function afterProgressTick(t) {
           seedArrivals();
           grindStartLoop();
           SFX.fanfare();
-          termPrint("[HR] 🎉 You're now Helpdesk Tier 1! New tickets (arriving over time) + SLA unlocked.", "t-ok");
-          termPrint("[HR] A new phase of the course is in the SOP Binder. 📚", "t-warn");
+          termPrint("[HR] ðŸŽ‰ You're now Helpdesk Tier 1! New tickets (arriving over time) + SLA unlocked.", "t-ok");
+          termPrint("[HR] A new phase of the course is in the SOP Binder. ðŸ“š", "t-warn");
           if (state.story.nightEvidence) {
-            toast("🤫 You have evidence from the night (keeper.ps1). Zora doesn't know yet...", "toast-secret");
+            toast("ðŸ¤« You have evidence from the night (keeper.ps1). Zora doesn't know yet...", "toast-secret");
           }
         });
       });
@@ -357,9 +357,9 @@ function afterProgressTick(t) {
     return;
   }
 
-  // grind promócie (rank 3+): stovky ticketov = vyššia pozícia
+  // grind promÃ³cie (rank 3+): stovky ticketov = vyÅ¡Å¡ia pozÃ­cia
   if (desired > state.rank && state.rank >= 2) {
-    // kariérna vetva — od ranku 3 si hráč vyberá špecializáciu
+    // kariÃ©rna vetva â€” od ranku 3 si hrÃ¡Ä vyberÃ¡ Å¡pecializÃ¡ciu
     if (desired >= 3 && !state.branch) {
       branchOpen(desired);
       return;
@@ -369,7 +369,7 @@ function afterProgressTick(t) {
     return;
   }
 
-  // Doris "HELP!" arc (aj bez promócie)
+  // Doris "HELP!" arc (aj bez promÃ³cie)
   dorisArcMaybe();
   checkAchievements();
 }
@@ -383,7 +383,7 @@ function onQuizPassed() {
       renderTopbar();
       renderTickets();
       SFX.fanfare();
-      termPrint("[HR] 🎉 Desktop Support Tier 2! Phase 2 of development will bring new tasks.", "t-ok");
+      termPrint("[HR] ðŸŽ‰ Desktop Support Tier 2! Phase 2 of development will bring new tasks.", "t-ok");
       statsOpen();
     });
   }
@@ -413,7 +413,7 @@ function renderQuizButton() {
     state.reviewDone &&
     RANKS[2].reqs.tickets.every((id) => state.resolved.includes(id) || state.escalated.includes(id)) &&
     !state.quiz.aplus;
-  btn.textContent = "🎓 A+ EXAM";
+  btn.textContent = "ðŸŽ“ A+ EXAM";
   btn.classList.toggle("hidden", !eligible);
 }
 
@@ -429,8 +429,8 @@ setInterval(() => {
       state.stats.slaMiss++;
       saveGame();
       SFX.alarm();
-      toast(`⏰ Ticket #${id} is OVER SLA! XP bonus halved.`, "toast-danger");
-      termPrint(`⏰ Ticket #${id} is OVER SLA! XP bonus halved. Solve it fast.`, "t-err");
+      toast(`â° Ticket #${id} is OVER SLA! XP bonus halved.`, "toast-danger");
+      termPrint(`â° Ticket #${id} is OVER SLA! XP bonus halved. Solve it fast.`, "t-err");
       renderTickets();
     }
   }
@@ -467,9 +467,9 @@ function startGame(withTutorial = false) {
   seedArrivals();
 }
 
-/* promo-overlay bolo odstránené v v3 — promócie idú cez cutscene engine */
+/* promo-overlay bolo odstrÃ¡nenÃ© v v3 â€” promÃ³cie idÃº cez cutscene engine */
 
-/* bezpečný binding — chýbajúci element nesmie zrútiť celý main.js */
+/* bezpeÄnÃ½ binding â€” chÃ½bajÃºci element nesmie zrÃºtiÅ¥ celÃ½ main.js */
 function on(id, fn, ev = "click") {
   const el = document.getElementById(id);
   if (el) el.addEventListener(ev, fn);
@@ -489,9 +489,9 @@ function toggleChill() {
   state.chill = !state.chill;
   saveGame();
   const btn = document.getElementById("btn-chill");
-  if (btn) btn.textContent = state.chill ? "🍃 CHILL: ON" : "⏱ CHILL: OFF";
+  if (btn) btn.textContent = state.chill ? "ðŸƒ CHILL: ON" : "â± CHILL: OFF";
   renderTickets();
-  termPrint(state.chill ? "Chill mode ON — SLA timers are off." : "Chill mode OFF — SLA is running. Brave.", "t-warn");
+  termPrint(state.chill ? "Chill mode ON â€” SLA timers are off." : "Chill mode OFF â€” SLA is running. Brave.", "t-warn");
 }
 
 on("btn-chill", toggleChill);
@@ -538,7 +538,7 @@ function menuShow() {
   cont.classList.toggle("hidden", !canContinue);
   rst.classList.toggle("hidden", !hadSave);
   if (canContinue) {
-    cont.textContent = `💾 CONTINUE — ${state.resolved.length + state.escalated.length} tickets · ${state.xp} XP`;
+    cont.textContent = `ðŸ’¾ CONTINUE â€” ${state.resolved.length + state.escalated.length} tickets Â· ${state.xp} XP`;
   }
   mmShowPanel(null);
 }
@@ -546,11 +546,11 @@ function menuHide() { if (mmRoot) mmRoot.classList.add("hidden"); }
 function menuShowIntro() {
   menuHide();
   if (state.player.name && hadSave) {
-    document.getElementById("btn-clockin").textContent = "⏰ CONTINUE SHIFT";
+    document.getElementById("btn-clockin").textContent = "â° CONTINUE SHIFT";
     const story = document.querySelector(".intro-story");
     if (story && !story.querySelector(".welcome-back")) {
       story.insertAdjacentHTML("beforeend",
-        `<p class="hint welcome-back">💾 Welcome back, <b>${escHtml(state.player.name)}</b>! Progress: ${state.resolved.length + state.escalated.length} tickets, ${state.xp} XP.</p>`);
+        `<p class="hint welcome-back">ðŸ’¾ Welcome back, <b>${escHtml(state.player.name)}</b>! Progress: ${state.resolved.length + state.escalated.length} tickets, ${state.xp} XP.</p>`);
     }
   }
   document.getElementById("intro-overlay").classList.remove("hidden");
@@ -559,7 +559,7 @@ function beginNewGame() {
   newGameState();
   const story = document.querySelector(".intro-story");
   if (story) { const wb = story.querySelector(".welcome-back"); if (wb) wb.remove(); }
-  document.getElementById("btn-clockin").textContent = "⏰ CLOCK IN";
+  document.getElementById("btn-clockin").textContent = "â° CLOCK IN";
   menuHide();
   document.getElementById("intro-overlay").classList.remove("hidden");
 }
@@ -574,7 +574,7 @@ if (mmRoot) {
   on("mm-new", () => {
     SFX.click();
     if (hadSave && (state.resolved.length + state.escalated.length > 0 || state.xp > 0)) {
-      document.getElementById("mm-confirm-title").textContent = "▶ START A NEW GAME?";
+      document.getElementById("mm-confirm-title").textContent = "â–¶ START A NEW GAME?";
       document.getElementById("mm-confirm-text").textContent =
         `Your current save (${escHtml(state.player.name) || "unnamed intern"}, ${state.xp} XP) will be permanently overwritten.`;
       mmConfirmAction = beginNewGame;
@@ -585,7 +585,7 @@ if (mmRoot) {
   });
   on("mm-reset", () => {
     SFX.click();
-    document.getElementById("mm-confirm-title").textContent = "🗑️ RESET PROGRESS?";
+    document.getElementById("mm-confirm-title").textContent = "ðŸ—‘ï¸ RESET PROGRESS?";
     document.getElementById("mm-confirm-text").textContent =
       "This permanently deletes your save. There is no undo. Mr. Pixel will not remember you.";
     mmConfirmAction = () => { SFX.err(); resetGame(); };
@@ -606,5 +606,5 @@ if (mmRoot) {
   }
   menuShow();
 }
-/ /   f i x e d  
- 
+
+
