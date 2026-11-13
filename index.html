@@ -3,127 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- Firebase Authentication -->
-<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.min.js"></script>
-<script>
-  // ===== FIREBASE CONFIGURATION =====
-  // Replace with your Firebase project config
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
-  // =====================================
-
-  const app = firebase.initializeApp(firebaseConfig);
-  const auth = firebase.getAuth(app);
-  const db = firebase.getFirestore(app);
-
-  // Check auth state on load
-  auth.onAuthStateChanged((user) => {
-    if (user) {
-      // User is logged in - store "remember me" data
-      localStorage.setItem('ticketquest_user', JSON.stringify({
-        uid: user.uid,
-        email: user.email,
-        loginTime: new Date().toISOString()
-      }));
-      // Show auth buttons hidden, continue to game
-      document.getElementById('auth-buttons').classList.add('hidden');
-      console.log('User logged in:', user.uid, user.email);
-    } else {
-      // User is logged out
-      localStorage.removeItem('ticketquest_user');
-      // Show auth buttons for new/returning users
-      document.getElementById('auth-buttons').classList.remove('hidden');
-      console.log('User logged out');
-    }
-  });
-</script>
-
-<script>
-  // ===== AUTH BUTTON HANDLERS =====
-
-  // Google Sign In (placeholder - would need Google API config)
-  document.getElementById('btn-google-signin').addEventListener('click', () => {
-    showMessage('Google Sign In coming soon! Use "Create Account" below.');
-  });
-
-  // Facebook Sign In (placeholder)
-  document.getElementById('btn-facebook-signin').addEventListener('click', () => {
-    showMessage('Facebook Sign In coming soon! Use "Create Account" below.');
-  });
-
-  // Local Sign Up
-  document.getElementById('btn-local-signup').addEventListener('click', () => {
-    const email = prompt('Enter your email for registration:');
-    const password = prompt('Enter a password:');
-    if (email && password) {
-      signup(email, password).then(() => {
-        // After signup, auto-login
-        login(email, password, true).then(() => {
-          document.getElementById('auth-buttons').classList.add('hidden');
-          hideIntroOverlay();
-          showMessage('Account created and logged in! Welcome to TicketQuest.');
-        });
-      }).catch(err => showMessage('Registration error: ' + err.message));
-    }
-  });
-
-  // Local Log In
-  document.getElementById('btn-local-login').addEventListener('click', () => {
-    const email = prompt('Enter your email:');
-    const password = prompt('Enter your password:');
-    if (email && password) {
-      login(email, password, true).then(() => {
-        document.getElementById('auth-buttons').classList.add('hidden');
-        hideIntroOverlay();
-        showMessage('Logged in successfully! Welcome back.');
-      }).catch(err => showMessage('Login failed: ' + err.message));
-    }
-  });
-
-  // Forgot Password
-  document.getElementById('btn-forgot').addEventListener('click', () => {
-    const email = prompt('Enter your email for password reset:');
-    if (email) {
-      requestPasswordReset(email);
-    }
-  });
-</script>
+<title>TicketQuest — IT Career Simulator</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <!-- Toast notifications -->
 <div id="toast-box"></div>
-
-<style>
-  /* Auth Buttons Styles */
-  .auth-buttons {
-    margin-top: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .auth-buttons .divider {
-    text-align: center;
-    margin: 8px 0;
-    font-size: 12px;
-    color: var(--muted);
-  }
-  
-  /* Hide auth buttons when user is logged in */
-  .auth-buttons.hidden {
-    display: none;
-  }
-</style>
 
 <!-- ===== MAIN MENU ===== -->
 <div id="main-menu" class="overlay">
@@ -175,15 +61,6 @@
   <div class="intro-box">
     <h1 class="game-title">TICKET<span>QUEST</span></h1>
     <p class="tagline">Get real IT experience before your first IT job.</p>
-    
-    <!-- Auth Buttons -->
-    <div id="auth-buttons" class="auth-buttons hidden">
-      <button id="btn-google-signin" class="btn-primary">Continue with Google</button>
-      <button id="btn-facebook-signin" class="btn-secondary">Continue with Facebook</button>
-      <div class="divider">or continue with</div>
-      <button id="btn-local-signup" class="btn-primary">Create Account</button>
-      <button id="btn-local-login" class="btn-secondary">Log In</button>
-    </div>
     
     <div class="intro-story">
       <p>You just started as an <b>IT intern</b> at <b>PIXL Corp</b>.</p>

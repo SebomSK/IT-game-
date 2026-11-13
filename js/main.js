@@ -1,30 +1,6 @@
 /* ===== TicketQuest — UI, game logic, wiring ===== */
 
-/* ---------- Firebase Authentication ---------- */
-import { isLoggedIn, getCurrentUser, parseStoredUser, showIntroOverlay, hideIntroOverlay, showMessage } from './auth.js';
-
-// Check for stored "remember me" user on app start
-document.addEventListener('DOMContentLoaded', () => {
-  const storedUser = parseStoredUser();
-  if (storedUser) {
-    // Auto-login with stored credentials
-    // Note: For security, you might want to force password change on first login
-    login(storedUser.email, 'TEMP_PASSWORD', true).then(() => {
-      // If auto-login succeeds, hide intro and start game
-      hideIntroOverlay();
-      showMessage('Welcome back! Continuing your shift...');
-    }).catch(err => {
-      // Auto-login failed (e.g., password changed), show login form
-      console.log('Auto-login failed:', err.message);
-      showIntroOverlay();
-    });
-  } else {
-    // No stored user, show intro
-    showIntroOverlay();
-  }
-});
-
-/* ---------- terminal ----------
+/* ---------- terminal ---------- */
 const termEl = document.getElementById("terminal");
 let inputRow = null, inputEl = null, promptEl = null;
 const history = [];
