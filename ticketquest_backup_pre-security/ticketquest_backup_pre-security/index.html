@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TicketQuest — IT Career Simulator</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Toast notifications -->
+<div id="toast-box"></div>
+
+<!-- Intro / clock in -->
+<div id="intro-overlay" class="overlay">
+  <div class="intro-box">
+    <h1 class="game-title">TICKET<span>QUEST</span></h1>
+    <p class="tagline">Get real IT experience before your first IT job.</p>
+    <div class="intro-story">
+      <p>You just started as an <b>IT intern</b> at <b>PIXL Corp</b>.</p>
+      <p>Walk into the office, talk to your coworkers, sit down at your desk —
+      and work on your own <b>simulated Windows Server</b> with a full desktop:
+      mail, helpdesk app, terminal, file explorer.</p>
+      <p class="hint">💡 Story, curriculum and a fake OS — all in one.</p>
+    </div>
+    <button id="btn-clockin" class="btn-primary">⏰ CLOCK IN</button>
+  </div>
+</div>
+
+<!-- Cutscene (visual novel) -->
+<div id="cutscene-overlay" class="overlay hidden">
+  <div id="cs-frame">
+    <div id="cs-pov">◎ 3RD PERSON</div>
+    <canvas id="cutscene-canvas" width="480" height="270"></canvas>
+    <div id="cs-dialog">
+      <div id="cs-speaker"></div>
+      <div id="cs-text"></div>
+      <div id="cs-input-wrap" class="hidden">
+        <input id="cs-input" autocomplete="off" spellcheck="false" placeholder="Type your name…">
+      </div>
+      <div id="cs-hint">▼ click / Enter to continue</div>
+    </div>
+    <button id="cs-skip">SKIP ▶▶</button>
+  </div>
+</div>
+
+<!-- Night terminal (mystery) -->
+<div id="night-overlay" class="overlay hidden">
+  <div id="night-frame">
+    <div class="night-title">🌙 SRV-DC01 — night session</div>
+    <div id="night-out"></div>
+    <div class="n-input-row">
+      <span class="n-prompt">night&gt;</span>
+      <input id="night-input" autocomplete="off" spellcheck="false">
+    </div>
+  </div>
+</div>
+
+<!-- Notes modal -->
+<div id="notes-overlay" class="overlay hidden">
+  <div class="modal-box">
+    <h2 class="modal-title">📝 Resolution note</h2>
+    <p class="modal-sub">Write down what you did. In real IT, documentation is half the job (+10 XP for a proper note).</p>
+    <textarea id="notes-text" rows="5" placeholder="e.g.: Account doris was locked. Unlocked via net user /active:yes, password reset per SOP..."></textarea>
+    <div class="modal-actions">
+      <button id="notes-skip" class="btn-secondary">Skip note</button>
+      <button id="notes-ok" class="btn-primary">Save note</button>
+    </div>
+  </div>
+</div>
+
+<!-- Phone modal -->
+<div id="phone-overlay" class="overlay hidden">
+  <div class="modal-box wide phone-box">
+    <h2 id="phone-title" class="modal-title">📞 Call</h2>
+    <div id="phone-mistakes" class="phone-mistakes"></div>
+    <div id="phone-dialog"></div>
+    <div id="phone-options"></div>
+    <div class="modal-actions">
+      <button id="phone-close" class="btn-secondary">Hang up (later)</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stats / CV modal -->
+<div id="stats-overlay" class="overlay hidden">
+  <div class="modal-box wide">
+    <h2 class="modal-title">📊 Your career @ PIXL Corp</h2>
+    <div id="stats-body"></div>
+    <div class="modal-actions">
+      <button id="btn-cv" class="btn-primary">📄 Export CV (.txt)</button>
+      <button id="stats-close" class="btn-secondary">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Performance review modal -->
+<div id="review-overlay" class="overlay hidden">
+  <div class="modal-box wide review-box">
+    <h2 class="modal-title">📋 PERFORMANCE REVIEW</h2>
+    <p class="modal-sub">Your first phase of work is done. Mr. Pixel and Zora will see you now.</p>
+    <div id="review-body"></div>
+    <div class="modal-actions">
+      <button id="review-ok" class="btn-primary">ACCEPT REVIEW</button>
+    </div>
+  </div>
+</div>
+
+<!-- SOP Binder / Training Portal -->
+<div id="binder-overlay" class="overlay hidden">
+  <div class="modal-box wide">
+    <h2 class="modal-title">📚 SOP Binder — Training Portal</h2>
+    <div id="binder-download" class="hidden">
+      <p class="modal-sub">The book isn't downloaded yet. The intranet is behind... usually.</p>
+      <button id="binder-download-btn" class="btn-primary">⬇ DOWNLOAD SOP BOOK (curriculum)</button>
+    </div>
+    <div id="binder-body"></div>
+    <div class="modal-actions">
+      <button id="binder-close" class="btn-secondary">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Quiz -->
+<div id="quiz-overlay" class="overlay hidden">
+  <div class="modal-box wide">
+    <h2 id="quiz-title" class="modal-title">🎓 Certification</h2>
+    <div id="quiz-body">
+      <p id="quiz-q" class="quiz-q"></p>
+      <div id="quiz-answers"></div>
+      <div class="modal-actions">
+        <button id="quiz-next" class="btn-primary" disabled>NEXT QUESTION →</button>
+      </div>
+    </div>
+    <div id="quiz-result" class="hidden"></div>
+  </div>
+</div>
+
+<!-- Notepad window (file viewer) -->
+<div id="npad-overlay" class="overlay hidden">
+  <div class="modal-box wide">
+    <h2 id="npad-title" class="modal-title">📄 File</h2>
+    <pre id="npad-body" class="npad-body"></pre>
+    <div class="modal-actions">
+      <button id="npad-close" class="btn-secondary">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tutorial layer -->
+<div id="tutorial-layer" class="hidden">
+  <div id="tut-highlight"></div>
+  <div id="tut-arrow"></div>
+  <div id="tut-box">
+    <div id="tut-text"></div>
+    <div class="tut-actions">
+      <button id="tut-skip" class="btn-secondary">Skip</button>
+      <button id="tut-next" class="btn-primary">NEXT →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GAME ===== -->
+<div id="game" class="hidden">
+
+  <!-- OFFICE VIEW -->
+  <section id="office-view">
+    <div id="office-topbar">
+      <div class="brand">TICKET<span>QUEST</span></div>
+      <div class="office-clock">🕘 9:00 AM — shift in progress</div>
+      <div class="rank-info" id="rank-info">
+        <span id="rank-name">Intern</span>
+        <div class="xpbar"><div id="xp-fill"></div></div>
+        <span id="xp-label">0 XP</span>
+        <span id="salary-label"></span>
+      </div>
+      <div class="top-actions">
+        <button id="btn-stats" class="btn-mini">📊 CAREER</button>
+      </div>
+    </div>
+
+    <div id="office-room">
+      <div class="room-window rw1"></div>
+      <div class="room-window rw2"></div>
+      <div class="room-window rw3"></div>
+      <div class="office-label">PIXL CORP — OPEN SPACE · FLOOR 3</div>
+
+      <div class="npc" data-npc="doris" style="left:6%;  top:34%">
+        <canvas class="npc-canvas" width="72" height="84"></canvas>
+        <span class="npc-name">Doris</span>
+        <span class="npc-role">Office Admin</span>
+      </div>
+      <div class="npc" data-npc="marek" style="left:24%; top:44%">
+        <canvas class="npc-canvas" width="72" height="84"></canvas>
+        <span class="npc-name">Mark</span>
+        <span class="npc-role">Marketing</span>
+      </div>
+      <div class="npc" data-npc="jana" style="left:42%; top:36%">
+        <canvas class="npc-canvas" width="72" height="84"></canvas>
+        <span class="npc-name">Jane</span>
+        <span class="npc-role">Accounting</span>
+      </div>
+      <div class="npc" data-npc="zora" style="left:60%; top:46%">
+        <canvas class="npc-canvas" width="72" height="84"></canvas>
+        <span class="npc-name">Zora</span>
+        <span class="npc-role">Your mentor · IT</span>
+      </div>
+      <div class="npc" data-npc="boss" style="left:80%; top:32%">
+        <canvas class="npc-canvas" width="72" height="84"></canvas>
+        <span class="npc-name">Mr. Pixel</span>
+        <span class="npc-role">CTO</span>
+      </div>
+
+      <div class="desk-props dp1"></div>
+      <div class="desk-props dp2"></div>
+      <div class="desk-props dp3"></div>
+      <div class="plant pl1"></div>
+      <div class="plant pl2"></div>
+    </div>
+
+    <div id="office-hud">
+      <div id="office-chat" class="hidden">
+        <div id="chat-name"></div>
+        <div id="chat-text"></div>
+        <div class="chat-actions">
+          <button id="chat-next" class="btn-secondary">NEXT ▸</button>
+          <button id="chat-close" class="btn-secondary">End talk</button>
+        </div>
+      </div>
+      <div id="office-bar">
+        <button id="btn-sitdown" class="btn-primary">🖥️ SIT DOWN AT YOUR DESK</button>
+        <span id="desk-hint" class="desk-hint">💡 Your coworkers are around — click them to talk</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- DESKTOP VIEW (fake OS) -->
+  <section id="desktop-view" class="hidden">
+    <div id="desktop-icons">
+      <div class="dicon" data-app="mail">
+        <div class="dicon-glyph mail-glyph">✉️</div><span>Mail</span>
+        <span id="mail-badge" class="dicon-badge hidden"></span>
+      </div>
+      <div class="dicon" data-app="helpdesk">
+        <div class="dicon-glyph hd-glyph">🎫</div><span>HelpDesk</span>
+        <span id="hd-badge" class="dicon-badge hidden"></span>
+      </div>
+      <div class="dicon" data-app="terminal">
+        <div class="dicon-glyph term-glyph">▶_</div><span>Terminal</span>
+      </div>
+      <div class="dicon" data-app="explorer">
+        <div class="dicon-glyph exp-glyph">📁</div><span>Files</span>
+      </div>
+      <div class="dicon" data-app="training">
+        <div class="dicon-glyph trn-glyph">📚</div><span>Training</span>
+      </div>
+      <div class="dicon" data-app="settings">
+        <div class="dicon-glyph set-glyph">⚙️</div><span>Settings</span>
+      </div>
+    </div>
+
+    <!-- window host -->
+    <div id="windows"></div>
+
+    <!-- taskbar -->
+    <div id="taskbar">
+      <div class="tb-left">
+        <button class="tb-btn tb-start" data-app="start">◈ Start</button>
+        <button class="tb-btn" data-app="mail">✉️ Mail</button>
+        <button class="tb-btn" data-app="helpdesk">🎫 HelpDesk</button>
+        <button class="tb-btn" data-app="terminal">▶_ Terminal</button>
+        <button class="tb-btn" data-app="explorer">📁 Files</button>
+      </div>
+      <div class="tb-right">
+        <button id="btn-quiz" class="btn-mini hidden"></button>
+        <button id="btn-chill" class="btn-mini">⏱ CHILL: OFF</button>
+        <button id="btn-binder" class="btn-mini">📚 SOP Binder</button>
+        <button id="btn-leave" class="btn-mini">🚶 Leave desk</button>
+        <span id="tb-clock" class="tb-clock">9:00 AM</span>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===== STATIC APP CONTENTS (moved into windows by apps.js) ===== -->
+<div id="app-storage" class="hidden">
+  <div id="terminal" tabindex="0"></div>
+  <div id="hd-content">
+    <h2 class="panel-title">📥 TICKETS (arrive during your shift)</h2>
+    <div id="ticket-list"></div>
+    <div id="ticket-detail" class="hidden">
+      <div class="detail-head">
+        <span id="td-id" class="ticket-id"></span>
+        <span id="td-priority" class="prio"></span>
+      </div>
+      <div id="td-from" class="detail-from"></div>
+      <div id="td-body" class="detail-body"></div>
+      <div class="sop">
+        <div class="sop-title">📖 SOP — procedure</div>
+        <ol id="td-sop"></ol>
+      </div>
+      <button id="btn-call" class="btn-call hidden">📞 CALL THE USER</button>
+      <button id="btn-take" class="btn-primary">✋ TAKE TICKET</button>
+    </div>
+  </div>
+  <div id="mail-list"></div>
+</div>
+
+<script src="js/state.js"></script>
+<script src="js/ranks.js"></script>
+<script src="js/tickets.js"></script>
+<script src="js/sfx.js"></script>
+<script src="js/avatar.js"></script>
+<script src="js/story.js"></script>
+<script src="js/cutscene.js"></script>
+<script src="js/sla.js"></script>
+<script src="js/tutorial.js"></script>
+<script src="js/binder.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/phones.js"></script>
+<script src="js/night.js"></script>
+<script src="js/cv.js"></script>
+<script src="js/review.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/office.js"></script>
+<script src="js/os.js"></script>
+<script src="js/apps.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
