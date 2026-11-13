@@ -10,7 +10,8 @@ const STORY_CHARS = {
 const SCENE_INTRO = {
   id: "intro",
   pov: "3rd",
-  bg: "reception",
+  bg: "bossoffice",
+  foreground: "executiveDesk",
   sprites: [
     { who: "player", pos: "left" },
     { who: "boss", pos: "right" },
@@ -21,13 +22,13 @@ const SCENE_INTRO = {
     prompt: "Type your name and press Enter…",
   },
   lines: [
-    { who: "narr", text: "PIXL CORP — Friday, 7:58 AM. First day at a new job." },
-    { who: "boss", text: "Ah, you must be the new intern. Sorry — what's your name?" },
+    { who: "narr", text: "PIXL CORP | Friday, 7:58 AM. Your first morning as an IT intern." },
+    { who: "boss", text: "You must be our new intern. Welcome to PIXL Corp. May I have your name?" },
     /* name input happens here (after line 1) */
-    { who: "boss", text: "{PLAYER}? Hm. Good name. Zora will take it from here — I don't do small talk, I do tickets." },
-    { who: "zora", text: "Welcome, {PLAYER}! I'm Zora, your mentor. Come, I'll show you your desk. The one by the window is yours." },
-    { who: "zora", text: "Rule #1: the user is always right. Rule #2: see rule #1 — but still verify it in the logs. 😄" },
-    { who: "zora", text: "Tickets are already waiting for you in the system. Let's go, {PLAYER}!" },
+    { who: "boss", text: "{PLAYER}, welcome aboard. Zora will introduce you to the team. I will be monitoring the service queue." },
+    { who: "zora", text: "Welcome, {PLAYER}. I'm Zora, your IT mentor. I'll show you your workstation and get you oriented." },
+    { who: "zora", text: "Start with the documented procedure. Verify reports against system logs before making changes." },
+    { who: "zora", text: "There are four tickets waiting in the queue. Let's review them." },
   ],
 };
 
@@ -37,9 +38,9 @@ const SCENE_NIGHT = {
   pov: "1st",
   bg: "deskpov",
   lines: [
-    { who: "thought", text: "9:43 PM. Everyone went home. I opened the logs one more time..." },
-    { who: "thought", text: "Doris got locked out three times this week. Three times. Not normal, even for a forgetful person." },
-    { who: "narr", text: "(The terminal is waiting. Look for yourself — type 'help'.)" },
+    { who: "thought", text: "9:43 PM. The office is empty. I reopened the security logs before heading home." },
+    { who: "thought", text: "Doris's account has been locked three times this week. That pattern needs investigation." },
+    { who: "narr", text: "The terminal is ready. Type 'help' to review the available commands." },
   ],
 };
 
@@ -53,10 +54,10 @@ const SCENE_PROMO_T1 = {
     { who: "zora", pos: "right" },
   ],
   lines: [
-    { who: "zora", text: "{PLAYER}, four tickets in a single shift? You don't see that every day." },
-    { who: "zora", text: "Mr. Pixel didn't smile, but his eyes looked pleased. For him, that's a celebration." },
-    { who: "zora", text: "You're officially Helpdesk Tier 1 now. Harder cases are waiting — onboarding, permissions, VPN, offboarding." },
-    { who: "zora", text: "And when you finish all of them... I have an exam for you. 😉" },
+    { who: "zora", text: "{PLAYER}, you resolved four tickets in your first shift. That's a strong start." },
+    { who: "zora", text: "Mr. Pixel kept his usual expression, but your service metrics caught his attention." },
+    { who: "zora", text: "You're now Helpdesk Tier 1. Your queue will include onboarding, access permissions, VPN, and offboarding." },
+    { who: "zora", text: "Complete the Tier 1 curriculum, and we'll schedule your certification exam." },
   ],
 };
 
@@ -64,17 +65,18 @@ const SCENE_PROMO_T1 = {
 const SCENE_PROMO_T2 = {
   id: "promo-t2",
   pov: "3rd",
-  bg: "office",
+  bg: "bossoffice",
+  foreground: "executiveDesk",
   sprites: [
     { who: "player", pos: "left" },
     { who: "boss", pos: "right" },
   ],
   lines: [
-    { who: "boss", text: "{PLAYER}. You passed the exam. Above my expectations." },
-    { who: "boss", text: "You're Desktop Support Tier 2 now. More responsibility, better pay, more ha... more challenges." },
-    { who: "narr", text: "Mr. Pixel looks away from his monitor for a second. That's almost an emotion." },
-    { who: "boss", text: "And {PLAYER}... tomorrow night, when you're still in the building — look into the logs. Once more." },
-    { who: "thought", text: "Does he know something? About the account lockouts? ... Tomorrow. I'll leave it for tomorrow." },
+    { who: "boss", text: "{PLAYER}, you passed the certification exam. Well done." },
+    { who: "boss", text: "Effective today, you're Desktop Support Tier 2. You'll take on more complex issues and greater responsibility." },
+    { who: "narr", text: "Mr. Pixel looks up from his monitor. From him, that is a generous celebration." },
+    { who: "boss", text: "Review the security logs tomorrow evening. I want to discuss a pattern I've noticed." },
+    { who: "thought", text: "He knows something about the repeated account lockouts. I'll review the logs tomorrow." },
   ],
 };
 
@@ -91,10 +93,10 @@ const SCENE_PROMO_BRANCH = {
       { who: "zora", pos: "right" },
     ],
     lines: [
-      { who: "zora", text: "{PLAYER}, infrastructure chose you. Active Directory, PowerShell, servers that never sleep — that's your territory now." },
-      { who: "zora", text: "From today you get admin tickets: audits, stale accounts, full setups. The kind nobody else wants to touch." },
-      { who: "zora", text: "One tip from an old admin: write the note BEFORE the ticket, not after the incident." },
-      { who: "narr", text: "Zora hands you a mechanical keyboard. It's heavier than it looks. Like responsibility." },
+      { who: "zora", text: "Your strengths point toward systems administration, {PLAYER}. You'll work with Active Directory, PowerShell, and server infrastructure." },
+      { who: "zora", text: "Your new queue will include audits, dormant accounts, and workstation deployments. Each change needs careful documentation." },
+      { who: "zora", text: "Document changes as you make them. Clear notes are essential when an incident needs review." },
+      { who: "narr", text: "Zora hands you a mechanical keyboard and a new set of responsibilities." },
     ],
   },
   soc: {
@@ -106,10 +108,10 @@ const SCENE_PROMO_BRANCH = {
       { who: "boss", pos: "right" },
     ],
     lines: [
-      { who: "boss", text: "The brute-forcer from 10.0.13.66? You stopped it before I even read the alert. Interesting." },
-      { who: "boss", text: "You're Security Analyst material, {PLAYER}. Logs that lie, users that click, attackers that persist. That's your playground now." },
-      { who: "boss", text: "Phishing reports, C2 beacons, incident response. The SOC desk is yours." },
-      { who: "narr", text: "Mr. Pixel walks away, then stops: 'Rule #3: assume breach. Verify. Assume again.'" },
+      { who: "boss", text: "You blocked the brute-force attempt from 10.0.13.66 before the alert reached my desk. Good response." },
+      { who: "boss", text: "You have the right instincts for security operations, {PLAYER}. You'll investigate suspicious activity and validate every finding with evidence." },
+      { who: "boss", text: "The SOC will handle phishing reports, command-and-control alerts, and incident response. Your first shift starts tomorrow." },
+      { who: "narr", text: "Mr. Pixel pauses at the door. 'Assume breach. Verify the evidence. Then verify it again.'" },
     ],
   },
 };
@@ -125,12 +127,12 @@ const SCENE_DORIS_HELP = {
     { who: "player", pos: "right" },
   ],
   lines: [
-    { who: "narr", text: "2:47 PM. The building goes quiet in the wrong way — the way it does when something big just broke." },
-    { who: "doris", text: "{PLAYER}! {PLAYER}!! I was just cleaning my desktop and things started DISAPPEARING!" },
-    { who: "doris", text: "First the sharedrive, then Outlook, then the printer! Am I fired? Am I a ghost??" },
-    { who: "narr", text: "Monitoring confirms: Netlogon and the Print Spooler just died. And the server room door is suspiciously unlocked." },
-    { who: "doris", text: "You're the IT genius! Fix it and I promise — PROMISE — no more lockout tickets!" },
-    { who: "thought", text: "She said that last time. And the time before that. Well. A promise is a ticket." },
+    { who: "narr", text: "2:47 PM. The office falls unusually quiet. A major service interruption has just begun." },
+    { who: "doris", text: "{PLAYER}, I need help. I was organizing my desktop when several files disappeared." },
+    { who: "doris", text: "The shared drive is unavailable, Outlook won't open, and the printer has stopped. Is the server down?" },
+    { who: "narr", text: "Monitoring shows that Netlogon and Print Spooler stopped within minutes of each other. The server-room door is unlocked." },
+    { who: "doris", text: "Could you restore the services? I'll stay at my desk and avoid touching anything." },
+    { who: "thought", text: "She made the same promise last month. This time, I'll check the logs first." },
   ],
 };
 
@@ -143,11 +145,11 @@ const SCENE_DORIS_FIXED = {
     { who: "player", pos: "right" },
   ],
   lines: [
-    { who: "narr", text: "3:31 PM. Netlogon up, Spooler up, printers singing. Order restored." },
-    { who: "doris", text: "My heroes! I brought you coffee. Two sugars. And I did NOT touch the server room again." },
-    { who: "doris", text: "...the door just opened by itself, probably." },
-    { who: "thought", text: "The incident report will say 'configuration drift'. Between us: it was Doris. It's always Doris." },
-    { who: "narr", text: "Official lesson learned: even the quiet afternoons deserve a backup plan." },
+    { who: "narr", text: "3:31 PM. Netlogon and Print Spooler are restored. The printers are responding again." },
+    { who: "doris", text: "Thank you. I brought coffee for the team. Two sugars, as requested." },
+    { who: "doris", text: "And I haven't been near the server room. The door may have opened on its own." },
+    { who: "thought", text: "The incident report will note configuration drift. I'll also recommend reviewing access controls." },
+    { who: "narr", text: "Lesson learned: even a quiet afternoon needs a tested recovery plan." },
   ],
 };
 
@@ -158,10 +160,10 @@ const SCENE_KEEPER = {
   pov: "1st",
   bg: "nightcity",
   lines: [
-    { who: "thought", text: "C:\\Windows\\Scripts\\keeper.ps1. Author: z. Created 14 months ago. Runs every night at 11 PM." },
-    { who: "thought", text: "It unlocks Doris's account at night... and re-locks it at 6 AM. Every single day. Like a clockwork." },
-    { who: "thought", text: "Zora has been KEEPING Doris in a controlled lockout loop for over a year. Why?" },
-    { who: "narr", text: "(A sticky note on the monitor: 'Sometimes the system IS the bug. Don't tell HR. — Z')" },
-    { who: "thought", text: "PIXL Corp is stranger than it looks. At least the brute-forcer is blocked. Small wins. ..." },
+    { who: "thought", text: "C:\\Windows\\Scripts\\keeper.ps1. Author: z. Created 14 months ago. Scheduled to run nightly at 11:00 PM." },
+    { who: "thought", text: "It unlocks Doris's account overnight, then locks it again at 6:00 AM. The schedule matches every incident." },
+    { who: "thought", text: "Zora has kept Doris's account in a controlled lockout cycle for over a year. I need to understand why." },
+    { who: "narr", text: "A note on the monitor reads: 'Sometimes the system is the bug. Don't tell HR. — Z.'" },
+    { who: "thought", text: "PIXL Corp is not what it appears to be. At least the brute-force source is blocked. One problem at a time." },
   ],
 };

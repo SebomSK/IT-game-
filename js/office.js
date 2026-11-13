@@ -146,6 +146,13 @@ const office = (() => {
   };
 
   /* sky seen through the windows (day, soft gradient + sun) */
+  function makeColorTexture(canvas) {
+    const texture = new THREE.CanvasTexture(canvas);
+    if (THREE.SRGBColorSpace && "colorSpace" in texture) texture.colorSpace = THREE.SRGBColorSpace;
+    else if (THREE.sRGBEncoding !== undefined && "encoding" in texture) texture.encoding = THREE.sRGBEncoding;
+    return texture;
+  }
+
   function makeSkyTexture() {
     const c = document.createElement("canvas"); c.width = 256; c.height = 128;
     const g = c.getContext("2d");
@@ -159,7 +166,7 @@ const office = (() => {
       g.beginPath(); g.ellipse(x, y, s, s * .42, 0, 0, Math.PI * 2); g.fill();
       g.beginPath(); g.ellipse(x + s * .7, y + 3, s * .7, s * .3, 0, 0, Math.PI * 2); g.fill();
     }
-    return new THREE.CanvasTexture(c);
+    return makeColorTexture(c);
   }
 
   /* PIXL Corp wall poster */
@@ -178,7 +185,41 @@ const office = (() => {
     g.fillStyle = "#e8823c"; g.fillRect(30, 116, 68, 8);
     g.fillStyle = "#2f2a22"; g.font = "600 9px 'Segoe UI'";
     g.fillText("IT CAREERS · FLOOR 3", 64, 142);
-    return new THREE.CanvasTexture(c);
+    return makeColorTexture(c);
+  }
+
+  function makeMonitorTexture() {
+    const c = document.createElement("canvas"); c.width = 512; c.height = 320;
+    const g = c.getContext("2d");
+    g.fillStyle = "#111916"; g.fillRect(0, 0, c.width, c.height);
+    g.fillStyle = "#26352f"; g.fillRect(0, 0, 512, 38);
+    g.fillStyle = "#9de2c7"; g.font = "700 18px Segoe UI";
+    g.fillText("PIXL CORP  /  IT SERVICE DESK", 20, 25);
+    g.fillStyle = "#18221e"; g.fillRect(0, 38, 112, 282);
+    g.fillStyle = "#84bba5"; g.font = "600 14px Segoe UI";
+    for (const [label, y] of [["INBOX", 72], ["TICKETS", 108], ["USERS", 144], ["SYSTEM", 180]]) {
+      g.fillText(label, 18, y);
+    }
+    g.fillStyle = "#26352f"; g.fillRect(132, 58, 360, 42);
+    g.fillStyle = "#d9e7df"; g.font = "600 15px Segoe UI";
+    g.fillText("Service queue", 148, 84);
+    g.fillStyle = "#62d9c0"; g.fillRect(414, 72, 58, 14);
+    g.fillStyle = "#14231e"; g.font = "700 10px Segoe UI";
+    g.fillText("ONLINE", 423, 83);
+    const rows = ["INC-1042   Account access", "INC-1043   Printer offline", "INC-1044   Network review"];
+    rows.forEach((row, i) => {
+      const y = 124 + i * 48;
+      g.fillStyle = i === 0 ? "#1c2b26" : "#17211d";
+      g.fillRect(132, y, 360, 40);
+      g.fillStyle = i === 0 ? "#f2c56b" : "#b8c8bf";
+      g.font = "13px Segoe UI";
+      g.fillText(row, 146, y + 25);
+    });
+    g.fillStyle = "#31453c"; g.fillRect(132, 280, 248, 8);
+    g.fillStyle = "#62d9c0"; g.fillRect(132, 280, 174, 8);
+    const texture = makeColorTexture(c);
+    texture.anisotropy = 4;
+    return texture;
   }
 
   /* round rug under the open-space */
@@ -191,22 +232,34 @@ const office = (() => {
     g.beginPath(); g.arc(128, 128, 74, 0, Math.PI * 2); g.stroke();
     g.fillStyle = "rgba(242,234,216,.16)";
     g.beginPath(); g.arc(128, 128, 40, 0, Math.PI * 2); g.fill();
-    const tex = new THREE.CanvasTexture(c);
+    const tex = makeColorTexture(c);
     tex.anisotropy = 4;
     return tex;
   }
 
   function makeFloorTexture() {
     const c = document.createElement("canvas");
-    c.width = c.height = 128;
+    c.width = c.height = 256;
     const g = c.getContext("2d");
-    g.fillStyle = "#8a7f5e"; g.fillRect(0, 0, 128, 128);
-    g.fillStyle = "rgba(255,255,255,.05)"; g.fillRect(0, 0, 64, 64); g.fillRect(64, 64, 64, 64);
-    g.strokeStyle = "rgba(0,0,0,.15)"; g.lineWidth = 2;
-    g.strokeRect(0, 0, 64, 64); g.strokeRect(64, 64, 64, 64);
-    const tex = new THREE.CanvasTexture(c);
+    const boards = ["#887a5e", "#918268", "#83765a", "#97876b"];
+    for (let row = 0; row < 4; row++) {
+      const y = row * 64;
+      const offset = row % 2 ? 32 : 0;
+      for (let x = -64 + offset; x < 256; x += 64) {
+        g.fillStyle = boards[(row + Math.floor((x + 64) / 64)) % boards.length];
+        g.fillRect(x, y, 64, 64);
+        g.fillStyle = "rgba(255,255,255,.035)";
+        for (let grain = 0; grain < 5; grain++) {
+          g.fillRect(x + 7, y + 10 + grain * 11, 48, 1);
+        }
+        g.strokeStyle = "rgba(27,24,18,.2)";
+        g.lineWidth = 2;
+        g.strokeRect(x + 1, y + 1, 62, 62);
+      }
+    }
+    const tex = makeColorTexture(c);
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(10, 6);
+    tex.repeat.set(8, 5);
     return tex;
   }
 
@@ -229,6 +282,19 @@ const office = (() => {
     head.castShadow = true; head.userData.hit = true;
     g.add(head);
 
+    const eyeMat = new THREE.MeshStandardMaterial({ color: 0x25252b, roughness: .8 });
+    for (const eyeX of [-0.08, 0.08]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), eyeMat);
+      eye.position.set(eyeX, head.position.y + 0.015, 0.255);
+      g.add(eye);
+    }
+    const badge = new THREE.Mesh(
+      new THREE.BoxGeometry(0.14, 0.16, 0.025),
+      new THREE.MeshStandardMaterial({ color: 0xf5c451, metalness: .25, roughness: .45 })
+    );
+    badge.position.set(0.14, body.position.y + 0.06, 0.18);
+    g.add(badge);
+
     const cap = new THREE.Mesh(new THREE.SphereGeometry(0.29, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), hair);
     cap.position.y = head.position.y + 0.03;
     g.add(cap);
@@ -244,6 +310,7 @@ const office = (() => {
       const a2 = new THREE.Mesh(armGeo, top); a2.position.set(0.36, 0.45, 0);
       a1.castShadow = a2.castShadow = true;
       g.add(a1, a2);
+      g.userData.walkParts = { leftLeg: l1, rightLeg: l2, leftArm: a1, rightArm: a2 };
     }
     return g;
   }
@@ -263,7 +330,7 @@ const office = (() => {
     g.font = "600 30px 'Segoe UI'";
     g.textAlign = "center"; g.textBaseline = "middle";
     g.fillText(text, 128, 31);
-    const tex = new THREE.CanvasTexture(c);
+    const tex = makeColorTexture(c);
     const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
     spr.scale.set(2.4, 0.6, 1);
     spr.renderOrder = 10;
@@ -422,7 +489,7 @@ const office = (() => {
     sg.fillText("SERVER ROOM", 128, 34);
     const sign = new THREE.Mesh(
       new THREE.PlaneGeometry(1.7, 0.42),
-      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(signC) })
+      new THREE.MeshBasicMaterial({ map: makeColorTexture(signC) })
     );
     sign.rotation.y = Math.PI / 2;
     sign.position.set(0.28, 2.85, 0);
@@ -468,12 +535,25 @@ const office = (() => {
     container = document.getElementById("office-3d");
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    if (renderer.outputColorSpace !== undefined && THREE.SRGBColorSpace) {
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+    }
+    if (THREE.ACESFilmicToneMapping !== undefined) {
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+    }
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
 
+    MAT.screen.map = makeMonitorTexture();
+    MAT.screen.color.set(0xffffff);
+    MAT.screen.emissive.set(0x173b30);
+    MAT.screen.emissiveIntensity = 0.35;
+    MAT.screen.needsUpdate = true;
+
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1e2c);
+    scene.background = new THREE.Color(0x111614);
 
     camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, 120);
     camera.position.set(player.x, 9.5, player.z + 10);
@@ -502,7 +582,7 @@ const office = (() => {
     // outer floor (beyond walls, for windows view)
     const outer = new THREE.Mesh(
       new THREE.PlaneGeometry(SIZE + 60, DEPTH + 60),
-      new THREE.MeshStandardMaterial({ color: 0x23283a, roughness: 1 })
+      new THREE.MeshBasicMaterial({ color: 0x111614 })
     );
     outer.rotation.x = -Math.PI / 2;
     outer.position.y = -0.02;
@@ -684,7 +764,22 @@ const office = (() => {
       if (!blocked(player.x, nz)) player.z = nz;
       player.x = Math.max(0.8, Math.min(SIZE - 0.8, player.x));
       player.z = Math.max(0.8, Math.min(DEPTH - 0.8, player.z));
+      const targetYaw = Math.atan2(dx, dz);
+      const yawDelta = Math.atan2(
+        Math.sin(targetYaw - playerGroup.rotation.y),
+        Math.cos(targetYaw - playerGroup.rotation.y)
+      );
+      playerGroup.rotation.y += yawDelta * Math.min(1, dt * 14);
       player.bob += dt * 10;
+    }
+    const walkParts = playerGroup.userData.walkParts;
+    if (walkParts) {
+      const swing = moving ? Math.sin(player.bob) * 0.38 : 0;
+      const blend = Math.min(1, dt * 12);
+      walkParts.leftLeg.rotation.x += (swing - walkParts.leftLeg.rotation.x) * blend;
+      walkParts.rightLeg.rotation.x += (-swing - walkParts.rightLeg.rotation.x) * blend;
+      walkParts.leftArm.rotation.x += (-swing * 0.65 - walkParts.leftArm.rotation.x) * blend;
+      walkParts.rightArm.rotation.x += (swing * 0.65 - walkParts.rightArm.rotation.x) * blend;
     }
     playerGroup.position.set(player.x, moving ? Math.abs(Math.sin(player.bob)) * 0.08 : 0, player.z);
 

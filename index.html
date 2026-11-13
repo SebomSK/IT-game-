@@ -77,7 +77,10 @@
 <div id="cutscene-overlay" class="overlay hidden">
   <div id="cs-frame">
     <div id="cs-pov">◎ 3RD PERSON</div>
-    <canvas id="cutscene-canvas" width="960" height="540"></canvas>
+    <div id="cs-stage">
+      <canvas id="cutscene-canvas" width="960" height="540" aria-hidden="true"></canvas>
+      <canvas id="cutscene-3d" width="960" height="540" aria-hidden="true"></canvas>
+    </div>
     <div id="cs-dialog">
       <div id="cs-speaker"></div>
       <div id="cs-text"></div>
