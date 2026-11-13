@@ -367,7 +367,7 @@ const os = (() => {
     document.getElementById("tb-tickets").addEventListener("click", () => openApp("helpdesk"));
     // klik na plochu zavrie start menu (ako v reálnom OS)
     document.getElementById("desktop-view").addEventListener("mousedown", (e) => {
-      if (e.target.closest(".dicon") || e.target.closest("#taskbar") || e.target.closest(".appwin")) return;
+      if (e.target.closest(".dicon") || e.target.closest("#taskbar") || e.target.closest(".appwin") || e.target.closest("#start-menu")) return;
       const menu = document.getElementById("start-menu");
       if (menu) menu.remove();
     });

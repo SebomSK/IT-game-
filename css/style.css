@@ -831,7 +831,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible {
 .dicon-badge.hidden { display: none !important; }
 
 /* wordmark host element */
-#windows { position: absolute; inset: 0 0 48px 0; z-index: 2; }
+#windows { position: absolute; inset: 0 0 48px 0; z-index: 2; pointer-events: none; }
+/* #windows pokrýva celú plochu — musí prepúšťať kliky na ikony, no jeho deti (okná, start menu) ostávajú klikateľné */
+#windows > * { pointer-events: auto; }
+#windows > #snap-preview { pointer-events: none; }
 .appwin {
   position: absolute;
   display: flex; flex-direction: column;
