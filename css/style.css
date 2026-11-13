@@ -31,8 +31,8 @@ button { font-family: inherit; }
 /* ---------- Overlays ---------- */
 .overlay {
   position: fixed; inset: 0;
-  background: rgba(8, 10, 16, 0.88);
-  backdrop-filter: blur(4px);
+  background: rgba(8, 10, 16, 0.55);
+  backdrop-filter: blur(2px);
   display: flex; align-items: center; justify-content: center;
   z-index: 100; padding: 16px;
 }
