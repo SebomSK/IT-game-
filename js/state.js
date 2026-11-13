@@ -72,7 +72,7 @@ const state = {
   },
 };
 
-/* čerstvá kópia predvoleného stavu — pre NEW GAME bez reloadu */
+/* Fresh copy of default state — for NEW GAME without reload */
 const FRESH_STATE = JSON.parse(JSON.stringify(state));
 
 function newGameState() {
@@ -119,7 +119,7 @@ function sanitizeLogin(v) {
 function deepMerge(target, src) {
   const FORBIDDEN = new Set(["__proto__", "constructor", "prototype"]);
   for (const k of Object.keys(src)) {
-    if (FORBIDDEN.has(k)) continue; // ochrana pred prototype pollution zo save-u
+    if (FORBIDDEN.has(k)) continue; // protection against prototype pollution from save
     if (src[k] && typeof src[k] === "object" && !Array.isArray(src[k]) && target[k]) {
       deepMerge(target[k], src[k]);
     } else {
