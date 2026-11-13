@@ -410,7 +410,9 @@ let grindNextId = 5000;
 function makeGrindTicket(forceKind) {
   const pool = grindPool();
   const kind = forceKind || pool[Math.floor(Math.random() * pool.length)] || "lockout";
-  const def = GRIND_KINDS[kind];
+  const def = typeof kind === "string" && Object.prototype.hasOwnProperty.call(GRIND_KINDS, kind)
+    ? GRIND_KINDS[kind]
+    : null;
   if (!def) return null;
 
   const first = GRIND_FIRST[Math.floor(Math.random() * GRIND_FIRST.length)];
@@ -445,8 +447,10 @@ function makeGrindTicket(forceKind) {
 /* hydratacia check/setup funkcií po načítaní zo save-u */
 function hydrateGrindTickets() {
   for (const t of state.grindTickets || []) {
-    const def = GRIND_KINDS[t.kind];
-    if (def && !t.check) {
+    const def = typeof t.kind === "string" && Object.prototype.hasOwnProperty.call(GRIND_KINDS, t.kind)
+      ? GRIND_KINDS[t.kind]
+      : null;
+    if (def && isPlainObject(t.params) && !t.check) {
       const made = def.make(t.params);
       t.check = (srv) => made.check(t.params, srv);
     }

@@ -106,7 +106,7 @@ function promoteTo(desired, withScene) {
     cls: "n-good",
   });
   toast(`🎉 PROMOTED — ${title}! Keep grinding.`, "toast-ticket");
-  termPrint(`[HR] 🎉 PROMOTION! You are now <b>${title}</b> (💰 $${r.salary}/mo).`, "t-ok");
+  termPrint(`[HR] 🎉 PROMOTION! You are now ${title} (💰 $${r.salary}/mo).`, "t-ok");
   termPrint("[HR] Harder, higher-value tickets will arrive from now on. The queue never sleeps.", "t-warn");
   const scene = SCENE_PROMO_BRANCH[state.branch];
   if (withScene && state.promotedTo < 3 && scene) {
@@ -298,11 +298,15 @@ function saveExport() {
 }
 
 function saveImport(file) {
+  if (!file || file.size > MAX_SAVE_BYTES) {
+    toast("⚠️ Save file is missing or larger than 2 MB.", "toast-danger");
+    return;
+  }
   const r = new FileReader();
   r.onload = () => {
     try {
       const data = JSON.parse(r.result);
-      if (!data || typeof data !== "object" || !data.player || typeof data.xp !== "number") {
+      if (!isPlainObject(data) || !isPlainObject(data.player) || !Number.isFinite(data.xp)) {
         throw new Error("bad save");
       }
       localStorage.setItem(SAVE_KEY, JSON.stringify(data));
@@ -311,6 +315,7 @@ function saveImport(file) {
       toast("⚠️ Not a valid TicketQuest save file.", "toast-danger");
     }
   };
+  r.onerror = () => toast("⚠️ Could not read the save file.", "toast-danger");
   r.readAsText(file);
 }
 

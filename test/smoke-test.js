@@ -1,6 +1,7 @@
 // Headless smoke test Fázy 1: celá hra bez prehliadača (Intern → T1 → T2)
 const fs = require("fs");
 const path = require("path");
+const { resolveRequestPath } = require("../dev-server");
 
 const store = {};
 global.localStorage = {
@@ -183,20 +184,57 @@ const pollutionProbe = {};
 deepMerge(pollutionProbe, JSON.parse('{"a":1,"__proto__":{"pwned":"yes"},"constructor":{"x":1}}'));
 expect("SEC: deepMerge blokuje prototype pollution", ({}).pwned === undefined);
 
-// 3) loadGame sanitizuje meno z tamperovaného save-u (stored XSS payload neutralizovaný)
+// 3) Invalid save shapes must not replace core values or inject array entries.
+const shapeProbe = { xp: 0, player: { name: "" }, resolved: [] };
+deepMerge(shapeProbe, JSON.parse('{"xp":{"bad":true},"player":"bad","resolved":["1",1,{}]}'));
+expect("SEC: deepMerge odmieta nesprávne typy", shapeProbe.xp === 0 && typeof shapeProbe.player === "object");
+expect("SEC: save arrays filter wrong types", shapeProbe.resolved.length === 1 && shapeProbe.resolved[0] === 1);
+const dynamicProbe = { server: { users: {}, wds: {}, mailbox: {} }, takenAt: {}, deadlines: {}, overdue: {}, phoneDone: {}, phoneState: {}, notes: {} };
+deepMerge(dynamicProbe, JSON.parse('{"admin":true,"server":{"users":{"new.user":{"active":true,"changed":false,"desc":"New User","role":"admin"}},"wds":{"WKS-101":{"deployed":true,"joined":false}},"mailbox":{"new.user":{"used":20,"quota":40}}},"takenAt":{"1101":100},"deadlines":{"1101":200},"overdue":{"1101":false},"phoneDone":{"1107":true},"phoneState":{"1107":{"step":2,"mistakes":1}},"notes":{"1101":"documented"}}'));
+expect("SEC: valid dynamic save records are retained",
+  dynamicProbe.server.users["new.user"].active && dynamicProbe.server.wds["WKS-101"].deployed);
+expect("SEC: dynamic save records drop unknown fields",
+  !Object.prototype.hasOwnProperty.call(dynamicProbe, "admin") &&
+  !Object.prototype.hasOwnProperty.call(dynamicProbe.server.users["new.user"], "role"));
+expect("SEC: valid dynamic progression maps are retained",
+  dynamicProbe.takenAt[1101] === 100 && dynamicProbe.phoneDone[1107] === true && dynamicProbe.notes[1101] === "documented");
+expect("SEC: null phone-state records are ignored", sanitizeDynamicMapEntry("phoneState", "1107", null) === undefined);
+expect("SEC: dev server resolves root index", path.basename(resolveRequestPath("/")) === "index.html");
+expect("SEC: dev server blocks sibling traversal", resolveRequestPath("/../ticketquest_backup/README.md") === null);
+expect("SEC: dev server blocks hidden files", resolveRequestPath("/.git/config") === null);
+const validSavedTicket = { id: 5000, kind: "lockout", params: {}, from: "IT", subject: "Access", body: "Help", sop: ["Check" ] };
+const savedTickets = sanitizeSaveArray("grindTickets", [], [validSavedTicket, { ...validSavedTicket, params: null }]);
+expect("SEC: malformed saved tickets are filtered", savedTickets.length === 1 && savedTickets[0].id === 5000);
+
+const originalProtoChanged = Object.prototype.changed;
+const originalProtoQuota = Object.prototype.quota;
+play("net user __proto__ StrongPass123!");
+play("set-mailbox __proto__ 100");
+play("get-service constructor");
+expect("SEC: simulated commands reject inherited object keys",
+  Object.prototype.changed === originalProtoChanged && Object.prototype.quota === originalProtoQuota);
+
+// 5) loadGame sanitizuje meno z tamperovaného save-u (stored XSS payload neutralizovaný)
 store["ticketquest-save-v2"] = JSON.stringify({
+  xp: 0,
   player: { name: '<img src=x onerror=alert(1)>Evil', login: "ev.il" },
 });
 const loadOk = loadGame();
 expect("SEC: loadGame neutralizuje XSS payload v mene", loadOk && !/[<>&"'`]/.test(state.player.name));
 expect("SEC: loadGame sanitizuje login", /^[a-z0-9._-]*$/.test(state.player.login));
 
-// 4) meno sa orezáva na 24 znakov
-store["ticketquest-save-v2"] = JSON.stringify({ player: { name: "A".repeat(500) } });
+const xpBeforeInvalidSave = state.xp;
+store["ticketquest-save-v2"] = JSON.stringify({ xp: { bad: true }, player: "invalid" });
+expect("SEC: invalid save envelope is rejected without mutation", !loadGame() && state.xp === xpBeforeInvalidSave);
+store["ticketquest-save-v2"] = " ".repeat(2 * 1024 * 1024 + 1);
+expect("SEC: oversized local save is rejected", !loadGame() && state.xp === xpBeforeInvalidSave);
+
+// 5) meno sa orezáva na 24 znakov
+store["ticketquest-save-v2"] = JSON.stringify({ xp: 0, player: { name: "A".repeat(500) } });
 loadGame();
 expect("SEC: meno je orezané na max 24 znakov", state.player.name.length === 24);
 
-// 5) terminál: HTML v argumentoch sa nezobrazí ako HTML (escapované na vstupe)
+// 6) terminál: HTML v argumentoch sa nezobrazí ako HTML (escapované na vstupe)
 runCommand('<img src=x onerror=alert(1)>'); // neznámy príkaz — musí len vypísať chybu
 expect("SEC: terminál neznámy príkaz s HTML nespadne", true);
 

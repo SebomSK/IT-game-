@@ -52,6 +52,7 @@ function hydrate(t) {
 }
 
 function solve(kind) {
+  state.server = JSON.parse(JSON.stringify(FRESH_STATE.server));
   const t = makeGrindTicket(kind);
   const srv = state.server;
   const p = t.params;

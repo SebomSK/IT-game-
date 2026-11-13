@@ -1,6 +1,30 @@
 /* ===== TicketQuest — UI, game logic, wiring ===== */
 
-/* ---------- terminal ---------- */
+/* ---------- Firebase Authentication ---------- */
+import { isLoggedIn, getCurrentUser, parseStoredUser, showIntroOverlay, hideIntroOverlay, showMessage } from './auth.js';
+
+// Check for stored "remember me" user on app start
+document.addEventListener('DOMContentLoaded', () => {
+  const storedUser = parseStoredUser();
+  if (storedUser) {
+    // Auto-login with stored credentials
+    // Note: For security, you might want to force password change on first login
+    login(storedUser.email, 'TEMP_PASSWORD', true).then(() => {
+      // If auto-login succeeds, hide intro and start game
+      hideIntroOverlay();
+      showMessage('Welcome back! Continuing your shift...');
+    }).catch(err => {
+      // Auto-login failed (e.g., password changed), show login form
+      console.log('Auto-login failed:', err.message);
+      showIntroOverlay();
+    });
+  } else {
+    // No stored user, show intro
+    showIntroOverlay();
+  }
+});
+
+/* ---------- terminal ----------
 const termEl = document.getElementById("terminal");
 let inputRow = null, inputEl = null, promptEl = null;
 const history = [];
@@ -9,7 +33,7 @@ let histIdx = -1;
 function termPrint(text, cls = "") {
   const div = document.createElement("div");
   div.className = "t-line" + (cls ? " " + cls : "");
-  div.innerHTML = text;
+  div.textContent = String(text ?? "");
   termEl.insertBefore(div, inputRow);
   termEl.scrollTop = termEl.scrollHeight;
 }
@@ -61,11 +85,8 @@ function banner() {
   termPrint(`Microsoft Windows [Version 10.0.26100.1]  —  ${HOST} (SIMULATED)`, "t-dim");
   termPrint("(c) PIXL Corp. All rights... probably reserved.", "t-dim");
   termPrint("");
-  termPrint(
-    `Welcome to the server, ${escHtml(state.player.name) || "colleague"}. Type <b>help</b> for commands.`,
-    "t-warn"
-  );
-  termPrint("Show tickets with <b>tickets</b>, curriculum lives in the SOP Binder on the left.", "t-warn");
+  termPrint(`Welcome to the server, ${state.player.name || "colleague"}. Type 'help' for commands.`, "t-warn");
+  termPrint("Show tickets with 'tickets'; the curriculum is in the SOP Binder on the left.", "t-warn");
   termPrint("");
 }
 
@@ -99,6 +120,7 @@ function renderTickets() {
   list.innerHTML = "";
   const all = [...TICKETS, ...(state.dorisTickets || []), ...(state.grindTickets || [])];
   for (const t of all) {
+    if (!t || typeof t !== "object") continue;
     if (!ticketVisible(t)) continue;
     // vyriešené grind tickety nezobrazuj — zoznam by rástl donekonečna
     if (t.grind && (state.resolved.includes(t.id) || state.escalated.includes(t.id))) continue;
@@ -111,6 +133,8 @@ function renderTickets() {
     const resolved = state.resolved.includes(t.id);
     const escalated = state.escalated.includes(t.id);
     const taken = state.taken.includes(t.id);
+    const priority = ["HIGH", "NORMAL", "CRITICAL"].includes(t.priority) ? t.priority : "NORMAL";
+    const ticketId = Number.isSafeInteger(t.id) ? t.id : "?";
     const card = document.createElement("div");
     card.className = "ticket-card" + (resolved ? " resolved" : "");
     const phoneTag = t.phone ? " 📞" : "";
@@ -123,12 +147,12 @@ function renderTickets() {
       : `🆕 New${phoneTag}` + (t.slaMin ? ` (SLA ${t.slaMin} min)` : "");
     card.innerHTML = `
       <div class="tc-head">
-        <span class="ticket-id">#${t.id}</span>
-        <span class="prio ${t.priority.toLowerCase()}">${t.priority}</span>
+        <span class="ticket-id">#${ticketId}</span>
+        <span class="prio ${priority.toLowerCase()}">${priority}</span>
       </div>
-      <div class="tc-subject">${t.subject}</div>
-      <div class="tc-from">${t.from}</div>
-      <div class="tc-status ${resolved ? "resolved" : taken ? "taken" : ""}">${status}</div>`;
+      <div class="tc-subject">${escHtml(t.subject)}</div>
+      <div class="tc-from">${escHtml(t.from)}</div>
+      <div class="tc-status ${resolved ? "resolved" : taken ? "taken" : ""}">${escHtml(status)}</div>`;
     card.addEventListener("click", () => { SFX.click(); showDetail(t.id); });
     list.appendChild(card);
   }
@@ -139,15 +163,23 @@ function renderTickets() {
 
 function showDetail(id) {
   const t = findTicket(id);
+  if (!t) return;
   const detail = document.getElementById("ticket-detail");
   detail.classList.remove("hidden");
   document.getElementById("td-id").textContent = "#" + t.id;
   const prioEl = document.getElementById("td-priority");
-  prioEl.textContent = t.priority;
-  prioEl.className = "prio " + t.priority.toLowerCase();
+  const priority = ["HIGH", "NORMAL", "CRITICAL"].includes(t.priority) ? t.priority : "NORMAL";
+  prioEl.textContent = priority;
+  prioEl.className = "prio " + priority.toLowerCase();
   document.getElementById("td-from").textContent = t.from;
-  document.getElementById("td-body").textContent = "„" + t.body.replaceAll("{PLAYER}", state.player.name || "") + "“";
-  document.getElementById("td-sop").innerHTML = t.sop.map((s) => "<li>" + s + "</li>").join("");
+  document.getElementById("td-body").textContent = "„" + String(t.body ?? "").replaceAll("{PLAYER}", state.player.name || "") + "“";
+  const sopList = document.getElementById("td-sop");
+  sopList.replaceChildren();
+  (Array.isArray(t.sop) ? t.sop.slice(0, 20) : []).forEach((line) => {
+    const item = document.createElement("li");
+    renderSopLine(item, line);
+    sopList.appendChild(item);
+  });
 
   const callBtn = document.getElementById("btn-call");
   if (t.phone) {
@@ -185,6 +217,22 @@ function showDetail(id) {
   }
   document.querySelectorAll(".ticket-card").forEach((c) =>
     c.classList.toggle("selected", c.dataset.id == t.id));
+}
+
+function renderSopLine(item, value) {
+  const text = String(value ?? "").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&amp;", "&");
+  let inCode = false;
+  text.split(/(<\/?code>)/gi).forEach((part) => {
+    if (/^<code>$/i.test(part)) { inCode = true; return; }
+    if (/^<\/code>$/i.test(part)) { inCode = false; return; }
+    if (inCode) {
+      const code = document.createElement("code");
+      code.textContent = part;
+      item.appendChild(code);
+    } else {
+      item.appendChild(document.createTextNode(part));
+    }
+  });
 }
 
 /* ---------- XP / rank / salary ---------- */

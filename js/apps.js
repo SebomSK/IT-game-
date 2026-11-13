@@ -110,14 +110,18 @@ const apps = (() => {
     });
 
     ticketMails().forEach((t) => {
+      if (!t || typeof t !== "object") return;
       const key = "ticket:" + t.id;
       const el = document.createElement("div");
+      const priority = ["HIGH", "NORMAL", "CRITICAL"].includes(t.priority) ? t.priority : "NORMAL";
+      const ticketId = Number.isSafeInteger(t.id) ? t.id : "?";
+      const sender = String(t.from ?? "Unknown sender");
       el.className = "ol-item ticket" + (selKey === key ? " sel" : "");
-      el.innerHTML = `<div class="ol-ava mini prio-${t.priority.toLowerCase()}">🎫</div>
+      el.innerHTML = `<div class="ol-ava mini prio-${priority.toLowerCase()}">🎫</div>
         <div class="ol-item-main">
-          <div class="ol-row1"><span class="ol-from">${t.from.split("<")[0].split(",")[0].trim()}</span><span class="ol-time">#${t.id}</span></div>
-          <div class="ol-subj">${t.subject}</div>
-          <div class="ol-snip">${t.body.slice(0, 64)}…</div>
+          <div class="ol-row1"><span class="ol-from">${escHtml(sender.split("<")[0].split(",")[0].trim())}</span><span class="ol-time">#${ticketId}</span></div>
+          <div class="ol-subj">${escHtml(t.subject)}</div>
+          <div class="ol-snip">${escHtml(String(t.body ?? "").slice(0, 64))}…</div>
         </div>`;
       el.onclick = () => { selectedMail = { type: "ticket", id: t.id }; seenInMail.add(t.id); SFX.click(); renderMail(); updateBadges(); };
       msgList.appendChild(el);
@@ -139,11 +143,13 @@ const apps = (() => {
       if (t && ticketMails().some((x) => x.id === t.id)) {
         const done = state.resolved.includes(t.id) || state.escalated.includes(t.id);
         const taken = state.taken.includes(t.id);
+        const priority = ["HIGH", "NORMAL", "CRITICAL"].includes(t.priority) ? t.priority : "NORMAL";
+        const ticketId = Number.isSafeInteger(t.id) ? t.id : "?";
         read.innerHTML = `<div class="ol-read-head">
-            <div class="ol-read-subj">🎫 #${t.id} — ${t.subject}</div>
-            <div class="ol-read-meta"><b>${t.from}</b> · <span class="prio ${t.priority.toLowerCase()}">${t.priority}</span>${t.slaMin ? ` · SLA ${t.slaMin} min` : ""}</div>
+            <div class="ol-read-subj">🎫 #${ticketId} — ${escHtml(t.subject)}</div>
+            <div class="ol-read-meta"><b>${escHtml(t.from)}</b> · <span class="prio ${priority.toLowerCase()}">${priority}</span>${Number.isFinite(t.slaMin) && t.slaMin > 0 ? ` · SLA ${t.slaMin} min` : ""}</div>
           </div>
-          <div class="ol-read-body">${escHtml(t.body.replaceAll("{PLAYER}", state.player.name || ""))}</div>
+          <div class="ol-read-body">${escHtml(String(t.body ?? "").replaceAll("{PLAYER}", state.player.name || ""))}</div>
           <div class="ol-read-actions">
             <button id="ol-open" class="btn-primary">Open in HelpDesk →</button>
             ${done ? `<span class="ol-done">✔ handled</span>` : taken ? `<span class="ol-done">✋ assigned to you</span>` : ""}
@@ -376,7 +382,7 @@ const apps = (() => {
       };
       pane.querySelector("#set-reset").onclick = () => {
         if (confirm("Really delete your save? All tickets, XP and story progress will be gone.")) {
-          localStorage.clear();
+          localStorage.removeItem(SAVE_KEY);
           location.reload();
         }
       };

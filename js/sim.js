@@ -17,11 +17,9 @@ const EVENTLOG_SECURITY = [
 function runCommand(raw) {
   const line = raw.trim();
   if (!line) return;
-  // bezpečnosť: cmd + args sa escapujú hneď na hranici — žiadna používateľská
-  // hodnota sa nemôže dostať do innerHTML terminálu ako HTML
   const parts = line.split(/\s+/);
-  const cmd = escHtml(parts[0].toLowerCase());
-  const args = parts.slice(1).map(escHtml);
+  const cmd = parts[0].toLowerCase();
+  const args = parts.slice(1);
 
   switch (cmd) {
     case "help":            cmdHelp(); break;
@@ -78,7 +76,7 @@ function runCommand(raw) {
     case "logout":          termPrint("You can't escape. The tickets will always find you. 😏", "t-dim"); break;
     case "hack":            termPrint(["A proper hacker uses the SOP binder. 😉", "Hacking = Ctrl+C, Ctrl+V with confidence.", "Try 'coffee'. It's the best exploit."][Math.floor(Math.random() * 3)], "t-dim"); break;
     default:
-      termPrint(`'${cmd}' is not recognized as a command. Try <b>help</b>.`, "t-err");
+      termPrint(`'${cmd}' is not recognized as a command. Try 'help'.`, "t-err");
   }
 }
 
@@ -90,8 +88,8 @@ function findTicket(id) {
   if (st && !st.check) {
     // po reloade z JSON-u funkcie chýbajú — dohydratuj podľa druhu
     if (st.grind) {
-      const def = GRIND_KINDS[st.kind];
-      if (def) { const made = def.make(st.params); st.check = (srv) => made.check(st.params, srv); }
+      const def = Object.prototype.hasOwnProperty.call(GRIND_KINDS, st.kind) ? GRIND_KINDS[st.kind] : null;
+      if (def && isPlainObject(st.params)) { const made = def.make(st.params); st.check = (srv) => made.check(st.params, srv); }
     } else if (st.doris) {
       st.check = (srv) => srv.users.doris.active === true && srv.users.doris.changed === true;
     }
@@ -101,11 +99,19 @@ function findTicket(id) {
 
 /* ---------- PowerShell cmdlety (reálne mená, simulovaná logika) ---------- */
 
+function hasOwnKey(object, key) {
+  return Object.prototype.hasOwnProperty.call(object, key);
+}
+
+function safeUserKey(name) {
+  return /^[a-z0-9._-]{1,32}$/.test(name) && !["__proto__", "constructor", "prototype"].includes(name);
+}
+
 /* Unlock-ADAccount <user> — odomknú konto (heslo stále treba resetnúť) */
 function cmdUnlockAccount(args) {
   const u = (args[0] || "").toLowerCase();
   const users = state.server.users;
-  if (!users[u]) { termPrint(`Unlock-ADAccount : The user '${u}' was not found.`, "t-err"); return; }
+  if (!safeUserKey(u) || !hasOwnKey(users, u)) { termPrint(`Unlock-ADAccount : The user '${u}' was not found.`, "t-err"); return; }
   users[u].active = true;
   saveGame();
   termPrint(`[OK] Account '${u}' unlocked (enabled). Password still needs a reset: set-adaccountpassword ${u} <newpass>`, "t-ok");
@@ -116,7 +122,7 @@ function cmdSetAdPassword(args) {
   const u = (args[0] || "").toLowerCase();
   const pass = args[1];
   const users = state.server.users;
-  if (!users[u]) { termPrint(`Set-ADAccountPassword : The user '${u}' was not found.`, "t-err"); return; }
+  if (!safeUserKey(u) || !hasOwnKey(users, u)) { termPrint(`Set-ADAccountPassword : The user '${u}' was not found.`, "t-err"); return; }
   if (!pass) { termPrint("Usage: set-adaccountpassword <user> <newpassword>", "t-err"); return; }
   if (pass.length < 8) { termPrint("Password does not meet complexity policy (min. 8 characters).", "t-err"); return; }
   users[u].changed = true;
@@ -186,7 +192,7 @@ function cmdGetHelp(args) {
 
 function cmdReboot(args) {
   const name = (args[0] || "").toUpperCase();
-  const w = state.server.wds[name];
+  const w = hasOwnKey(state.server.wds, name) ? state.server.wds[name] : null;
   if (!w) { termPrint(`Machine '${name}' is unknown.`, "t-err"); return; }
   if (w.rebooted) { termPrint(`${name} has already been rebooted.`, "t-dim"); return; }
   w.rebooted = true;
@@ -381,12 +387,13 @@ function cmdNetUser(a) {
     termPrint("\nTip: 'net user <name>' shows details.", "t-dim");
     return;
   }
+  if (!safeUserKey(name)) { termPrint("Invalid user name.", "t-err"); return; }
 
   // create: net user <name> <password> /add
   const passArg = a.find((x, i) => i >= 1 && !x.startsWith("/") && x !== undefined);
   if (flags.includes("/add")) {
     if (!passArg) { termPrint("Usage: net user <name> <password> /add", "t-err"); return; }
-    if (users[name]) { termPrint(`User '${name}' already exists.`, "t-err"); return; }
+    if (hasOwnKey(users, name)) { termPrint(`User '${name}' already exists.`, "t-err"); return; }
     if (passArg.length < 8) { termPrint("The password entered is too short. Minimum 8 characters.", "t-err"); return; }
     users[name] = { active: true, changed: true, desc: name.charAt(0).toUpperCase() + name.slice(1) + " (new employee)" };
     saveGame();
@@ -394,7 +401,7 @@ function cmdNetUser(a) {
     return;
   }
 
-  if (!users[name]) { termPrint(`User '${name}' not found.`, "t-err"); return; }
+  if (!hasOwnKey(users, name)) { termPrint(`User '${name}' not found.`, "t-err"); return; }
 
   // password reset: net user <name> <password>
   if (passArg && !passArg.startsWith("/")) {
@@ -450,7 +457,7 @@ function cmdNetGroup(a) {
   }
   if (flag === "/add") {
     if (groups[realKey].includes(user)) { termPrint("User is already a member.", "t-dim"); return; }
-    if (!state.server.users[user]) { termPrint(`User '${user}' not found.`, "t-err"); return; }
+    if (!safeUserKey(user) || !hasOwnKey(state.server.users, user)) { termPrint(`User '${user}' not found.`, "t-err"); return; }
     groups[realKey].push(user);
     saveGame();
     termPrint(`The command completed successfully. (${user} → ${realKey})`, "t-ok");
@@ -474,7 +481,7 @@ function cmdGetService(args) {
   termPrint("------   ----           -----------");
   let found = false;
   for (const s of list) {
-    if (!(s in svcs)) continue;
+    if (!hasOwnKey(svcs, s)) continue;
     found = true;
     termPrint(`${svcs[s].padEnd(9)}${s.padEnd(15)}${SERVICE_NAMES[s] || s}`);
   }
@@ -498,7 +505,7 @@ const SERVICE_NAMES = {
 function cmdStartService(args) {
   const s = (args[0] || "").toLowerCase();
   const svcs = state.server.services;
-  if (!(s in svcs)) { termPrint(`Service '${s}' not found.`, "t-err"); return; }
+  if (!hasOwnKey(svcs, s)) { termPrint(`Service '${s}' not found.`, "t-err"); return; }
   if (svcs[s] === "RUNNING") { termPrint("The service is already running.", "t-dim"); return; }
   svcs[s] = "RUNNING";
   saveGame();
@@ -507,7 +514,7 @@ function cmdStartService(args) {
 
 function cmdGetMailbox(args) {
   const u = (args[0] || "").toLowerCase();
-  const mb = state.server.mailbox[u];
+  const mb = hasOwnKey(state.server.mailbox, u) ? state.server.mailbox[u] : null;
   if (!mb) { termPrint(`Mailbox '${u}' not found.`, "t-err"); return; }
   termPrint(`Mailbox        ${u}
 Items          2,841
@@ -520,7 +527,7 @@ Storage used   ${mb.used} GB / ${mb.quota} GB`);
 function cmdSetMailbox(args) {
   const u = (args[0] || "").toLowerCase();
   const gb = parseInt(args[1], 10);
-  const mb = state.server.mailbox[u];
+  const mb = hasOwnKey(state.server.mailbox, u) ? state.server.mailbox[u] : null;
   if (!mb) { termPrint(`Mailbox '${u}' not found.`, "t-err"); return; }
   if (!gb || gb <= 0) { termPrint("Usage: set-mailbox <u> <GB>", "t-err"); return; }
   mb.quota = gb;
@@ -589,7 +596,7 @@ function cmdRobocopy(args) {
 
 function cmdWdsDeploy(args) {
   const name = (args[0] || "").toUpperCase();
-  const w = state.server.wds[name];
+  const w = hasOwnKey(state.server.wds, name) ? state.server.wds[name] : null;
   if (!w) { termPrint(`WDS: machine '${name}' is not in the pipeline. (Known: ${Object.keys(state.server.wds).join(", ")})`, "t-err"); return; }
   if (w.deployed) { termPrint("The image is already installed.", "t-dim"); return; }
   termPrint("Windows Deployment Services", "t-warn");
@@ -603,7 +610,7 @@ function cmdWdsDeploy(args) {
 
 function cmdAddComputer(args) {
   const name = (args[0] || "").toUpperCase();
-  const w = state.server.wds[name];
+  const w = hasOwnKey(state.server.wds, name) ? state.server.wds[name] : null;
   if (!w) { termPrint(`Machine '${name}' is unknown.`, "t-err"); return; }
   if (!w.deployed) { termPrint("Deploy the image first: 'wds-deploy " + name + "'", "t-err"); return; }
   if (w.joined) { termPrint("The machine is already in the domain.", "t-dim"); return; }
@@ -678,6 +685,10 @@ function cmdResolve(args) {
   }
   if (!state.taken.includes(id)) {
     termPrint("You haven't taken this ticket yet — take it in the HelpDesk app (✋ TAKE TICKET).", "t-err");
+    return;
+  }
+  if (typeof t.check !== "function") {
+    termPrint("This saved ticket is invalid and cannot be resolved. Remove it by importing a valid save.", "t-err");
     return;
   }
   if (t.check(state.server)) {

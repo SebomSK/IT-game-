@@ -1740,3 +1740,21 @@ button:active:not(:disabled) { transform: translateY(1px); }
   #cs-skip { top: 11px; right: 12px; font-size: 9px; }
 }
 
+.menu-foot a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.privacy-page { background: #131816; }
+.privacy-content {
+  width: min(760px, calc(100% - 32px));
+  margin: 48px auto;
+  padding: clamp(22px, 5vw, 42px);
+  background: #202623;
+  border: 1px solid #3c4943;
+  border-radius: 8px;
+  line-height: 1.7;
+}
+.privacy-content h1 { margin: 24px 0 4px; font-size: 30px; }
+.privacy-content h2 { margin: 28px 0 8px; font-size: 18px; color: var(--accent); }
+.privacy-content p { margin: 10px 0; color: #d6dfd9; }
+.privacy-content a { color: var(--accent); }
+.privacy-back { display: inline-block; margin-bottom: 12px; }
+.privacy-updated, .privacy-disclaimer { color: var(--muted) !important; font-size: 13px; }
+
