@@ -9,6 +9,7 @@ const STORY_CHARS = {
 /* Intro — 3rd person, the boss asks for your name */
 const SCENE_INTRO = {
   id: "intro",
+  title: "PIXL CORP · FRIDAY, 7:58 AM",
   pov: "3rd",
   bg: "bossoffice",
   foreground: "executiveDesk",
@@ -35,6 +36,7 @@ const SCENE_INTRO = {
 /* Night POV scene — intro before the interactive night terminal (1st person) */
 const SCENE_NIGHT = {
   id: "night",
+  title: "NIGHT SHIFT · 9:43 PM",
   pov: "1st",
   bg: "deskpov",
   lines: [
@@ -47,6 +49,7 @@ const SCENE_NIGHT = {
 /* Promotion to Tier 1 */
 const SCENE_PROMO_T1 = {
   id: "promo-t1",
+  title: "PROMOTION · HELPDESK TIER 1",
   pov: "3rd",
   bg: "office",
   sprites: [
@@ -64,6 +67,7 @@ const SCENE_PROMO_T1 = {
 /* Promotion to Tier 2 (after the A+ quiz) */
 const SCENE_PROMO_T2 = {
   id: "promo-t2",
+  title: "PROMOTION · DESKTOP SUPPORT TIER 2",
   pov: "3rd",
   bg: "bossoffice",
   foreground: "executiveDesk",
@@ -86,6 +90,7 @@ const SCENE_PROMO_T2 = {
 const SCENE_PROMO_BRANCH = {
   admin: {
     id: "promo-admin",
+  title: "NEW PATH · SYSTEMS ADMINISTRATION",
     pov: "3rd",
     bg: "office",
     sprites: [
@@ -101,6 +106,7 @@ const SCENE_PROMO_BRANCH = {
   },
   soc: {
     id: "promo-soc",
+  title: "NEW PATH · SECURITY OPERATIONS",
     pov: "3rd",
     bg: "serverroom",
     sprites: [
@@ -120,6 +126,7 @@ const SCENE_PROMO_BRANCH = {
 
 const SCENE_DORIS_HELP = {
   id: "doris-help",
+  title: "INCIDENT · 2:47 PM",
   pov: "3rd",
   bg: "serverroom",
   sprites: [
@@ -127,10 +134,10 @@ const SCENE_DORIS_HELP = {
     { who: "player", pos: "right" },
   ],
   lines: [
-    { who: "narr", text: "2:47 PM. The office falls unusually quiet. A major service interruption has just begun." },
+    { who: "narr", text: "2:47 PM. The office falls unusually quiet. A major service interruption has just begun.", shake: true },
     { who: "doris", text: "{PLAYER}, I need help. I was organizing my desktop when several files disappeared." },
     { who: "doris", text: "The shared drive is unavailable, Outlook won't open, and the printer has stopped. Is the server down?" },
-    { who: "narr", text: "Monitoring shows that Netlogon and Print Spooler stopped within minutes of each other. The server-room door is unlocked." },
+    { who: "narr", text: "Monitoring shows that Netlogon and Print Spooler stopped within minutes of each other. The server-room door is unlocked.", shake: true },
     { who: "doris", text: "Could you restore the services? I'll stay at my desk and avoid touching anything." },
     { who: "thought", text: "She made the same promise last month. This time, I'll check the logs first." },
   ],
@@ -138,6 +145,7 @@ const SCENE_DORIS_HELP = {
 
 const SCENE_DORIS_FIXED = {
   id: "doris-fixed",
+  title: "RECOVERY · 3:31 PM",
   pov: "3rd",
   bg: "office",
   sprites: [
@@ -157,6 +165,7 @@ const SCENE_DORIS_FIXED = {
 
 const SCENE_KEEPER = {
   id: "keeper",
+  title: "EVIDENCE · keeper.ps1",
   pov: "1st",
   bg: "nightcity",
   lines: [
@@ -164,6 +173,6 @@ const SCENE_KEEPER = {
     { who: "thought", text: "It unlocks Doris's account overnight, then locks it again at 6:00 AM. The schedule matches every incident." },
     { who: "thought", text: "Zora has kept Doris's account in a controlled lockout cycle for over a year. I need to understand why." },
     { who: "narr", text: "A note on the monitor reads: 'Sometimes the system is the bug. Don't tell HR. — Z.'" },
-    { who: "thought", text: "PIXL Corp is not what it appears to be. At least the brute-force source is blocked. One problem at a time." },
+    { who: "thought", text: "PIXL Corp is not what it appears to be. At least the brute-force source is blocked. One problem at a time.", shake: true },
   ],
 };

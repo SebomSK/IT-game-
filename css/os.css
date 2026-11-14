@@ -1,0 +1,116 @@
+/* ===== Desktop OS: resize handles, context menu, start search, Alt+Tab, wallpapers ===== */
+
+/* --- zmena veľkosti okien (8 úchytov) --- */
+.appwin-rs { position: absolute; z-index: 5; touch-action: none; }
+.rs-n, .rs-s { left: 10px; right: 10px; height: 8px; cursor: ns-resize; }
+.rs-e, .rs-w { top: 10px; bottom: 10px; width: 8px; cursor: ew-resize; }
+.rs-n { top: -3px; } .rs-s { bottom: -3px; } .rs-e { right: -3px; } .rs-w { left: -3px; }
+.rs-ne, .rs-nw, .rs-se, .rs-sw { width: 16px; height: 16px; }
+.rs-ne { top: -3px; right: -3px; cursor: nesw-resize; }
+.rs-sw { bottom: -3px; left: -3px; cursor: nesw-resize; }
+.rs-nw { top: -3px; left: -3px; cursor: nwse-resize; }
+.rs-se { bottom: -3px; right: -3px; cursor: nwse-resize; }
+.appwin.maximized .appwin-rs { display: none; }
+.appwin { overflow: visible; }                 /* úchyty presahujú okraj */
+.appwin > .appwin-titlebar { border-radius: 8px 8px 0 0; }
+.appwin > .appwin-body { border-radius: 0 0 8px 8px; }
+.appwin.maximized > .appwin-titlebar, .appwin.maximized > .appwin-body { border-radius: 0; }
+
+/* --- kontextové menu --- */
+#ctx-menu {
+  position: fixed; z-index: 90; min-width: 220px; padding: 4px;
+  background: rgba(40, 40, 44, .96); backdrop-filter: blur(24px) saturate(1.3);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.55);
+  animation: smIn2 .1s ease-out;
+}
+@keyframes smIn2 { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: none; } }
+.ctx-item {
+  display: block; width: 100%; text-align: left; font: inherit; font-size: 12.5px;
+  color: var(--ink); background: transparent; border: none; border-radius: 5px;
+  padding: 7px 10px; cursor: pointer;
+}
+.ctx-item:hover, .ctx-item:focus-visible { background: rgba(255,255,255,.1); outline: none; }
+.ctx-sep { height: 1px; background: rgba(255,255,255,.1); margin: 4px 6px; }
+
+/* --- Start menu: vyhľadávanie, výsledky, recent --- */
+.sm-search { cursor: text; }
+.sm-search-input {
+  flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+  color: var(--ink); font: inherit; font-size: 12.5px;
+}
+.sm-search:focus-within { border-bottom-color: var(--accent); background: rgba(255,255,255,.11); }
+.sm-results { display: grid; gap: 2px; margin-bottom: 14px; min-height: 120px; }
+.sm-res { display: flex; align-items: center; gap: 10px; text-align: left; font: inherit; color: var(--ink);
+  background: transparent; border: none; border-radius: 6px; padding: 8px 10px; cursor: pointer; }
+.sm-res:hover, .sm-res.sel { background: rgba(255,255,255,.1); }
+.sm-res.sel { box-shadow: inset 2px 0 var(--accent); }
+.sm-res-ico { font-size: 18px; width: 26px; text-align: center; }
+.sm-res-main { display: grid; min-width: 0; }
+.sm-res-main b { font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sm-res-main small { font-size: 10.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sm-empty { color: var(--muted); font-size: 12px; padding: 8px 6px; }
+.sm-recents { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-bottom: 14px; }
+.sm-recent { display: flex; gap: 8px; align-items: center; font: inherit; font-size: 12px; color: var(--ink);
+  background: transparent; border: none; border-radius: 6px; padding: 7px 8px; cursor: pointer; text-align: left; }
+.sm-recent:hover { background: rgba(255,255,255,.09); }
+
+/* --- Alt+Tab --- */
+#alt-tab {
+  position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 95;
+  display: flex; gap: 8px; padding: 14px; max-width: 92vw; overflow-x: auto;
+  background: rgba(36,36,40,.92); backdrop-filter: blur(28px);
+  border: 1px solid rgba(255,255,255,.12); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+}
+.at-item { display: grid; justify-items: center; gap: 4px; padding: 10px 14px; border-radius: 8px; min-width: 78px;
+  border: 2px solid transparent; color: var(--ink); }
+.at-item span { font-size: 28px; }
+.at-item small { font-size: 11px; }
+.at-item.sel { border-color: var(--accent); background: rgba(255,255,255,.1); }
+
+/* --- taskbar: pripnuté (nespustené) aplikácie --- */
+.tb-win.pinned-idle { opacity: .75; }
+.tb-win.pinned-idle .tb-win-label { display: none; }
+
+/* --- plocha: refresh + tapety --- */
+#desktop-icons.refresh .dicon { animation: icoRefresh .35s ease-out; }
+@keyframes icoRefresh { from { opacity: 0; } to { opacity: 1; } }
+#desktop-view[data-wall="1"] {
+  background:
+    radial-gradient(620px 460px at 30% 30%, rgba(90, 110, 220, .34), transparent 62%),
+    radial-gradient(520px 520px at 70% 55%, rgba(150, 70, 200, .22), transparent 64%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.015) 0 1px, transparent 1px 5px),
+    linear-gradient(165deg, #0b0d1a 0%, #141831 55%, #0b0d17 100%);
+}
+#desktop-view[data-wall="2"] {
+  background:
+    radial-gradient(640px 440px at 62% 28%, rgba(255, 150, 70, .36), transparent 62%),
+    radial-gradient(560px 500px at 30% 60%, rgba(220, 70, 110, .24), transparent 64%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.015) 0 1px, transparent 1px 5px),
+    linear-gradient(165deg, #1a0f12 0%, #2a1618 55%, #170e12 100%);
+}
+
+/* --- nastavenia: posuvník hlasitosti --- */
+.vol-slider { width: 150px; accent-color: var(--accent); }
+.set-vol { display: flex; align-items: center; gap: 10px; }
+
+/* --- mobil: maximalizované okná zaberú celú plochu nad taskbarom --- */
+@media (max-width: 760px) {
+  #start-menu { width: 96vw; }
+  .sm-pinned { grid-template-columns: repeat(4, 1fr); }
+  .sm-recents { grid-template-columns: 1fr; }
+}
+
+/* --- Mail: odpoveď, výsledky hodnotenia --- */
+.ol-read-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.ol-compose { margin-top: 14px; padding: 12px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 8px; text-align: left; }
+.ol-compose.hidden { display: none; }
+.ol-compose-tip { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.ol-reply-text { width: 100%; box-sizing: border-box; background: rgba(0,0,0,.3); color: var(--ink); border: 1px solid rgba(255,255,255,.14); border-radius: 6px; padding: 8px; font: inherit; font-size: 12.5px; resize: vertical; }
+.ol-compose-row { display: flex; gap: 8px; margin-top: 8px; }
+.ol-feedback { margin-top: 8px; font-size: 12.5px; line-height: 1.6; }
+.ol-warn { color: #ffb4a8; margin-top: 4px; }
+.ol-gain { color: #54e8b1; margin-top: 4px; font-weight: 600; }
+.ol-item.unread .ol-subj { font-weight: 700; }
+.ol-empty-folder { padding: 18px 12px; color: var(--muted); font-size: 12px; }
+.ol-folder { cursor: pointer; }

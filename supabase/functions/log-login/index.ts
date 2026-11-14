@@ -1,23 +1,28 @@
 // Records the REAL client IP server-side. The browser cannot choose or fake it.
 // Deploy: supabase functions deploy log-login
-// Secrets: supabase secrets set ALLOWED_ORIGIN=https://sebomsk.github.io
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const cors = {
-  "Access-Control-Allow-Origin": Deno.env.get("ALLOWED_ORIGIN") ?? "https://sebomsk.github.io",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Vary": "Origin",
-};
+const ALLOWED = ["https://sebomsk.github.io"];
+
+function corsFor(req: Request) {
+  const origin = req.headers.get("origin") ?? "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED.includes(origin) ? origin : ALLOWED[0],
+    "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
 
 Deno.serve(async (req) => {
+  const cors = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: cors });
 
   const token = (req.headers.get("Authorization") ?? "").replace(/^Bearer /i, "");
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, // injected by Supabase, never in client code
+    JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS")!).default,
   );
 
   // Verify the caller really is a logged-in user.

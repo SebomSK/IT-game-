@@ -7,7 +7,11 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>TicketQuest — IT Career Simulator</title>
-<link rel="stylesheet" href="css/style.css?v=12">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' file:; script-src 'self' file:; style-src 'self' file:; font-src 'self' file:; img-src 'self' file: data:; connect-src 'self' https://*.supabase.co; base-uri 'none'; form-action 'none'">
+<link rel="stylesheet" href="css/style.css?v=4ce6b527">
+<link rel="stylesheet" href="css/os.css?v=4ce6b527">
+<link rel="stylesheet" href="css/learn.css?v=4ce6b527">
+<link rel="stylesheet" href="css/soc.css?v=4ce6b527">
 </head>
 <body>
 
@@ -33,6 +37,10 @@
       <div class="mm-setting-row">
         <span>🔊 Sound effects</span>
         <button id="mm-sound" class="menu-btn small">ON</button>
+      </div>
+      <div class="mm-setting-row">
+        <span>🎚 Volume</span>
+        <input id="mm-volume" class="vol-slider" type="range" min="0" max="100" step="5" aria-label="Volume">
       </div>
       <div class="mm-setting-row dim">
         <span>💾 Saving</span>
@@ -129,6 +137,7 @@
   <div class="modal-box">
     <h2 class="modal-title">📝 Resolution note</h2>
     <p class="modal-sub">Write down what you did. In real IT, documentation is half the job (+10 XP for a proper note).</p>
+    <div id="notes-learn"></div>
     <textarea id="notes-text" rows="5" placeholder="e.g.: Account doris was locked. Unlocked via net user /active:yes, password reset per SOP..."></textarea>
     <div class="modal-actions">
       <button id="notes-skip" class="btn-secondary">Skip note</button>
@@ -290,11 +299,17 @@
       <div class="dicon" data-app="training">
         <div class="dicon-glyph trn-glyph">📚</div><span>Training</span>
       </div>
+      <div class="dicon" data-app="learn">
+        <div class="dicon-glyph lrn-glyph">🎓</div><span>Learn</span>
+      </div>
       <div class="dicon" data-app="library">
         <div class="dicon-glyph lib-glyph">📖</div><span>Library</span>
       </div>
       <div class="dicon" data-app="settings">
         <div class="dicon-glyph set-glyph">⚙️</div><span>Settings</span>
+      </div>
+      <div class="dicon" data-app="soc">
+        <div class="dicon-glyph soc-glyph">🛡️</div><span>SOC</span>
       </div>
     </div>
 
@@ -364,33 +379,38 @@
   <div id="mail-list"></div>
 </div>
 
-<script src="js/vendor/supabase-2.119.0.js"></script>
-<script src="js/config.js?v=12"></script>
-<script src="js/auth.js?v=12"></script>
-<script src="js/state.js?v=12"></script>
-<script src="js/ranks.js?v=12"></script>
-<script src="js/tickets.js?v=12"></script>
-<script src="js/grind.js?v=12"></script>
-<script src="js/books.js?v=12"></script>
-<script src="js/sfx.js?v=12"></script>
-<script src="js/avatar.js?v=12"></script>
-<script src="js/story.js?v=12"></script>
-<script src="js/cutscene.js?v=12"></script>
-<script src="js/sla.js?v=12"></script>
-<script src="js/tutorial.js?v=12"></script>
-<script src="js/binder.js?v=12"></script>
-<script src="js/quiz.js?v=12"></script>
-<script src="js/phones.js?v=12"></script>
-<script src="js/night.js?v=12"></script>
-<script src="js/cv.js?v=12"></script>
-<script src="js/review.js?v=12"></script>
-<script src="js/features.js?v=12"></script>
-<script src="js/sim.js?v=12"></script>
-<script src="js/three.min.js?v=12"></script>
-<script src="js/office.js?v=12"></script>
-<script src="js/os.js?v=12"></script>
-<script src="js/apps.js?v=12"></script>
-<script src="js/main.js?v=12"></script>
+<script src="js/vendor/supabase-2.119.0.js?v=4ce6b527"></script>
+<script src="js/config.js?v=4ce6b527"></script>
+<script src="js/auth.js?v=4ce6b527"></script>
+<script src="js/state.js?v=4ce6b527"></script>
+<script src="js/consequences.js?v=4ce6b527"></script>
+<script src="js/ranks.js?v=4ce6b527"></script>
+<script src="js/tickets.js?v=4ce6b527"></script>
+<script src="js/grind.js?v=4ce6b527"></script>
+<script src="js/books.js?v=4ce6b527"></script>
+<script src="js/sfx.js?v=4ce6b527"></script>
+<script src="js/avatar.js?v=4ce6b527"></script>
+<script src="js/story.js?v=4ce6b527"></script>
+<script src="js/cutscene.js?v=4ce6b527"></script>
+<script src="js/sla.js?v=4ce6b527"></script>
+<script src="js/tutorial.js?v=4ce6b527"></script>
+<script src="js/binder.js?v=4ce6b527"></script>
+<script src="js/chapters.js?v=4ce6b527"></script>
+<script src="js/quiz.js?v=4ce6b527"></script>
+<script src="js/phones.js?v=4ce6b527"></script>
+<script src="js/night.js?v=4ce6b527"></script>
+<script src="js/cv.js?v=4ce6b527"></script>
+<script src="js/review.js?v=4ce6b527"></script>
+<script src="js/features.js?v=4ce6b527"></script>
+<script src="js/learn.js?v=4ce6b527"></script>
+<script src="js/sim.js?v=4ce6b527"></script>
+<script src="js/three.min.js?v=4ce6b527"></script>
+<script src="js/office.js?v=4ce6b527"></script>
+<script src="js/os.js?v=4ce6b527"></script>
+<script src="js/apps.js?v=4ce6b527"></script>
+<script src="js/evidence.js?v=4ce6b527"></script>
+<script src="js/siem.js?v=4ce6b527"></script>
+<script src="js/main.js?v=4ce6b527"></script>
   <!-- career branch choice (rank 3) -->
   <div id="branch-overlay" class="overlay hidden">
     <div class="modal-box branch-modal">

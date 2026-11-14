@@ -1,4 +1,4 @@
-﻿/* ===== TicketQuest — visual novel cutscénový engine ===== */
+/* ===== TicketQuest — visual novel cutscénový engine ===== */
 
 const cutscene = (() => {
   const overlay = document.getElementById("cutscene-overlay");
@@ -29,6 +29,11 @@ const cutscene = (() => {
   let active3dPlayerName = null;
   let actors3d = [];
   let raf3d = null;
+  let speakerWho = null;     // kto práve hovorí (pre kameru a animácie postáv)
+  let sceneStart = 0;
+  let camBase = null;        // { pos, look } — základ pre dolly/kameru
+  let shakeUntil = 0;
+  let titleEl = null;
 
   /* ---------- zvuk (WebAudio, len efekty) ---------- */
   let actx = null;
@@ -600,20 +605,22 @@ const cutscene = (() => {
     }
     const neck = new THREE.Mesh(new THREE.CylinderGeometry(.15, .17, .24, 12), skin);
     neck.position.y = 2.28; actor.add(neck);
+    const headGroup = new THREE.Group(); headGroup.position.y = 2.68; actor.add(headGroup);
+    const eyeMeshes = [];
     const head = new THREE.Mesh(new THREE.SphereGeometry(.43, 24, 18), skin);
-    head.position.y = 2.68; head.castShadow = true; actor.add(head);
+    head.position.y = 0; head.castShadow = true; headGroup.add(head);
     const cap = new THREE.Mesh(new THREE.SphereGeometry(.45, 24, 14, 0, Math.PI * 2, 0, Math.PI * .58), hair);
-    cap.position.y = 2.81; cap.castShadow = true; actor.add(cap);
+    cap.position.y = .13; cap.castShadow = true; headGroup.add(cap);
     for (const eyeX of [-.14, .14]) {
       const eye = new THREE.Mesh(new THREE.SphereGeometry(.065, 12, 10), new THREE.MeshStandardMaterial({ color: 0xf7f5ea, roughness: .4 }));
-      eye.position.set(eyeX, 2.68, .365); actor.add(eye);
+      eye.position.set(eyeX, 0, .365); headGroup.add(eye); eyeMeshes.push(eye);
       const pupil = new THREE.Mesh(new THREE.SphereGeometry(.028, 10, 8), new THREE.MeshStandardMaterial({ color: 0x20272a, roughness: .35 }));
-      pupil.position.set(eyeX, 2.68, .423); actor.add(pupil);
+      pupil.position.set(eyeX, 0, .423); headGroup.add(pupil); eyeMeshes.push(pupil);
     }
     const nose = new THREE.Mesh(new THREE.SphereGeometry(.055, 10, 8), skin);
-    nose.scale.set(.8, 1, .8); nose.position.set(0, 2.56, .405); actor.add(nose);
+    nose.scale.set(.8, 1, .8); nose.position.set(0, -.12, .405); headGroup.add(nose);
     const mouth = new THREE.Mesh(new THREE.TorusGeometry(.105, .014, 6, 18, Math.PI), new THREE.MeshStandardMaterial({ color: 0x704b3a, roughness: .8 }));
-    mouth.position.set(0, 2.48, .37); mouth.rotation.z = Math.PI; actor.add(mouth);
+    mouth.position.set(0, -.2, .37); mouth.rotation.z = Math.PI; headGroup.add(mouth);
 
     const legGeo = new THREE.BoxGeometry(.27, .7, .38);
     for (const legX of [-.22, .22]) {
@@ -627,6 +634,13 @@ const cutscene = (() => {
     actor.position.set(x, 0, -.78);
     actor.rotation.y = x < 0 ? .08 : -.08;
     actor.userData.bobPhase = phase;
+    actor.userData.who = who;
+    actor.userData.head = headGroup;
+    actor.userData.mouth = mouth;
+    actor.userData.eyes = eyeMeshes;
+    actor.userData.mats = [skin, top, hair, pants];
+    actor.userData.baseX = x;
+    actor.userData.nextBlink = 1 + Math.random() * 3;
     return actor;
   }
 
@@ -644,6 +658,9 @@ const cutscene = (() => {
     world3d.add(key);
     const fill = new THREE.PointLight(sceneData.bg === "serverroom" ? 0x63dfb2 : 0xf2c987, 24, 20, 2);
     fill.position.set(4, 5, 3); world3d.add(fill);
+    world3d.userData.fill = fill;
+    world3d.userData.fillBase = 24;
+    world3d.userData.flicker = sceneData.bg === "serverroom";
 
     const isOffice = ["bossoffice", "reception", "office"].includes(sceneData.bg);
     if (isOffice) addOffice3d(world3d, sceneData.foreground === "executiveDesk" || sceneData.bg === "bossoffice");
@@ -678,17 +695,114 @@ const cutscene = (() => {
       camera3d.position.set(0, 3.8, 10.8);
       camera3d.lookAt(0, 2.5, -.35);
     }
+    addAtmosphere3d(sceneData);
+    const lookFor = { deskpov: [0, 2.5, -2.3], nightcity: [0, 3.2, -10] }[sceneData.bg] || [0, 2.5, -.35];
+    camBase = { pos: camera3d.position.clone(), look: new THREE.Vector3(...lookFor) };
+    sceneStart = performance.now();
     active3dScene = sceneData;
     active3dPlayerName = state.player.name || "";
     resize3d();
   }
 
+  /* atmosféra: prach v kancelárii, dážď v meste, lietajúce čiastočky v serverovni */
+  function addAtmosphere3d(sceneData) {
+    if (!world3d || typeof THREE === "undefined") return;
+    const bg = sceneData.bg;
+    if (bg === "nightcity") {
+      const n = 260, pos = new Float32Array(n * 6);
+      for (let i = 0; i < n; i++) {
+        const x = (Math.random() - .5) * 40, y = Math.random() * 18, z = -2 - Math.random() * 22;
+        pos.set([x, y, z, x, y - .7, z], i * 6);
+      }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      const rain = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x9cc2ff, transparent: true, opacity: .35 }));
+      rain.userData.kind = "rain";
+      world3d.add(rain);
+    } else {
+      const n = 90, pos = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) pos.set([(Math.random() - .5) * 16, Math.random() * 7, -3 + Math.random() * 7], i * 3);
+      const g = new THREE.BufferGeometry();
+      g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      const color = bg === "serverroom" ? 0x63dfb2 : 0xffe2b0;
+      const dust = new THREE.Points(g, new THREE.PointsMaterial({ color, size: .045, transparent: true, opacity: .55, depthWrite: false }));
+      dust.userData.kind = "dust";
+      world3d.add(dust);
+    }
+  }
+
   function animate3d() {
     if (overlay.classList.contains("hidden") || !renderer3d || !world3d) { raf3d = null; return; }
-    const time = performance.now() / 1000;
+    const now = performance.now();
+    const time = now / 1000;
+    const since = (now - sceneStart) / 1000;
+    const talking = !!(typing && !typing.done);
+
     actors3d.forEach((actor) => {
-      actor.position.y = Math.sin(time * 1.25 + actor.userData.bobPhase) * .018;
+      const u = actor.userData;
+      const speaking = !!speakerWho && u.who === speakerWho;
+      const target = speaking ? 1.04 : 1.0;
+      const k = actor.scale.x + (target - actor.scale.x) * .12;
+      actor.scale.setScalar(k);
+      actor.position.y = Math.sin(time * 1.25 + u.bobPhase) * .018;
+      // hovoriaci sa mierne nakloní dopredu a hýbe hlavou; ostatní počúvajú
+      const lean = speaking ? .05 : 0;
+      actor.rotation.x += (lean - actor.rotation.x) * .1;
+      if (u.head) {
+        const nod = speaking && talking ? Math.sin(time * 9 + u.bobPhase) * .05 : Math.sin(time * .8 + u.bobPhase) * .015;
+        u.head.rotation.x = nod;
+        u.head.rotation.y = speaking ? Math.sin(time * 1.7) * .09 : (speakerWho ? (u.baseX < 0 ? -.18 : .18) : 0);  // ostatní sa pozerajú na rečníka
+      }
+      if (u.mouth) u.mouth.scale.y = speaking && talking ? .6 + Math.abs(Math.sin(time * 16 + u.bobPhase)) * 1.9 : 1;
+      // žmurkanie
+      if (u.eyes && time > u.nextBlink) {
+        u.eyes.forEach((e) => { e.scale.y = .08; });
+        if (time > u.nextBlink + .13) { u.eyes.forEach((e) => { e.scale.y = 1; }); u.nextBlink = time + 2.5 + Math.random() * 3.5; }
+      }
+      // zvýraznenie rečníka jemným teplým svetlom na materiáloch
+      (u.mats || []).forEach((m) => { if (m.emissive) { m.emissive.setHex(speaking ? 0x2a1d0c : 0x000000); } });
     });
+
+    // atmosféra
+    world3d.children.forEach((o) => {
+      if (o.userData.kind === "rain") {
+        const a = o.geometry.attributes.position;
+        for (let i = 0; i < a.count; i += 2) {
+          let y = a.getY(i) - .45;
+          if (y < 0) y += 18;
+          a.setY(i, y); a.setY(i + 1, y - .7);
+        }
+        a.needsUpdate = true;
+      } else if (o.userData.kind === "dust") {
+        const a = o.geometry.attributes.position;
+        for (let i = 0; i < a.count; i++) {
+          let y = a.getY(i) + .0025 + (i % 5) * .0004;
+          if (y > 7) y = 0;
+          a.setY(i, y); a.setX(i, a.getX(i) + Math.sin(time * .4 + i) * .0009);
+        }
+        a.needsUpdate = true;
+      }
+    });
+    const fill = world3d.userData.fill;
+    if (fill && world3d.userData.flicker) fill.intensity = world3d.userData.fillBase * (.82 + Math.random() * .22);
+
+    // kamera: pomalý dolly + plynulé natočenie k rečníkovi + otras
+    if (camBase) {
+      const speaker = actors3d.find((a) => a.userData.who === speakerWho);
+      const sx = speaker ? speaker.userData.baseX * .22 : 0;
+      const dolly = Math.min(since * .035, .9);
+      const tx = camBase.pos.x + sx, tz = camBase.pos.z - dolly;
+      camera3d.position.x += (tx - camera3d.position.x) * .04;
+      camera3d.position.z += (tz - camera3d.position.z) * .04;
+      camera3d.position.y = camBase.pos.y + Math.sin(time * .35) * .04;
+      if (now < shakeUntil) {
+        const power = (shakeUntil - now) / 450 * .16;
+        camera3d.position.x += (Math.random() - .5) * power;
+        camera3d.position.y += (Math.random() - .5) * power;
+      }
+      const lookX = camBase.look.x + sx * .55;
+      camera3d.lookAt(lookX, camBase.look.y, camBase.look.z);
+    }
     renderer3d.render(world3d, camera3d);
     raf3d = requestAnimationFrame(animate3d);
   }
@@ -740,6 +854,27 @@ const cutscene = (() => {
   }
 
   /* ---------- typewriter ---------- */
+  function showTitle(scene) {
+    if (!scene || !scene.title) return;
+    if (!titleEl) {
+      titleEl = document.createElement("div");
+      titleEl.id = "cs-title";
+      stage.appendChild(titleEl);
+    }
+    const [main, sub] = String(scene.title).split("·").map((t) => t.trim());
+    titleEl.innerHTML = escHtml(main) + (sub ? `<small>${escHtml(sub)}</small>` : "");
+    titleEl.classList.remove("show");
+    void titleEl.offsetWidth;
+    titleEl.classList.add("show");
+  }
+
+  function doShake() {
+    shakeUntil = performance.now() + 450;
+    stage.classList.remove("shake");
+    void stage.offsetWidth;
+    stage.classList.add("shake");
+  }
+
   function currentLine() {
     const sc = scenes[sceneIdx];
     return sc && sc.lines ? sc.lines[lineIdx] : null;
@@ -748,9 +883,11 @@ const cutscene = (() => {
   function showLine() {
     const line = currentLine();
     if (!line) { nextScene(); return; }
-    renderScene(scenes[sceneIdx]);
-    inputWrap.classList.add("hidden");
     const who = line.who;
+    speakerWho = who === "you" ? "player" : (who === "narr" || who === "thought") ? null : who;
+    renderScene(scenes[sceneIdx]);
+    if (line.shake) doShake();
+    inputWrap.classList.add("hidden");
     let speaker = "";
     let cls = "";
     if (who === "narr") { speaker = ""; cls = "t-dim"; }
@@ -832,6 +969,7 @@ const cutscene = (() => {
     if (sceneIdx >= scenes.length) { end(); return; }
     const sc = scenes[sceneIdx];
     renderScene(sc);
+    showTitle(sc);
     if (sc.input && sc.input.immediate) { startInput(); return; }
     showLine();
   }
@@ -851,6 +989,7 @@ const cutscene = (() => {
     overlay.classList.remove("hidden");
     skipBtn.onclick = () => { end(); };
     renderScene(scenes[0]);
+    showTitle(scenes[0]);
     if (scenes[0].input && scenes[0].input.immediate) startInput();
     else showLine();
   }

@@ -38,6 +38,10 @@ function statsOpen() {
       <b>Skills you practiced in the game:</b>
       <ul>${skillsList().map((x) => `<li>${x}</li>`).join("") || "<li>(none yet — how about one ticket?)</li>"}</ul>
     </div>
+    <div class="cv-skills">
+      <b>Real-world knowledge (from debriefs &amp; reflection questions):</b>
+      <ul>${learn.skillSummary().filter((x) => x.count > 0).map((x) => `<li>${x.label} — ${x.level}</li>`).join("") || "<li>(solve a ticket and read the debrief)</li>"}</ul>
+    </div>
     <div id="ach-panel"></div>`;
   achRender();
   document.getElementById("stats-overlay").classList.remove("hidden");

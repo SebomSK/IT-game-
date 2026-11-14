@@ -1,0 +1,19 @@
+{
+  "name": "ticketquest",
+  "version": "0.6.0",
+  "private": true,
+  "description": "TicketQuest - helpdesk & IT career simulator in the browser (vanilla JS).",
+  "scripts": {
+    "start": "node dev-server.js",
+    "stamp": "node scripts/stamp.js",
+    "check:stamp": "node scripts/stamp.js --check",
+    "check:encoding": "node scripts/check-encoding.js",
+    "test:unit": "node test/smoke-test.js && node test/branch-test.js && node test/grind-test.js && node test/learn-test.js && node test/chapters-test.js",
+    "test:ui": "node test/ui-test.js && node test/soc-test.js",
+    "test": "npm run check:encoding && npm run check:stamp && npm run test:unit && npm run test:ui",
+    "prepush": "npm run stamp && npm test"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

@@ -290,8 +290,24 @@ function binderShowChapter(ch) {
   reader.innerHTML = `
     <div class="binder-reader-title">${ch.title}</div>
     ${ch.content.map((l) => `<div class="binder-line">${l.replace(/</g, "&lt;")}</div>`).join("")}
+    <div class="binder-extras"></div>
     <button class="btn-secondary binder-back">← BACK TO CONTENTS</button>`;
   reader.querySelector(".binder-back").onclick = binderOpen;
+  /* kvíz + replay sa odomknú po dokončení kapitoly (chapters.js) */
+  const extra = typeof chapterExtras === "function" ? chapterExtras(ch) : null;
+  if (extra) {
+    const box = reader.querySelector(".binder-extras");
+    if (binderChapterDone(ch)) {
+      const best = (state.chapterQuiz && state.chapterQuiz[extra.key]) || 0;
+      box.innerHTML = `<button class="btn-primary binder-cq">🎓 Chapter check (3 questions)${best ? ` — best ${best}/3` : ""}</button>` +
+        (extra.replay ? ` <button class="btn-secondary binder-replay">🔁 Replay lab — same skill, different fault</button>` : "");
+      box.querySelector(".binder-cq").onclick = () => chapterQuizOpen(ch, () => binderShowChapter(ch));
+      const rp = box.querySelector(".binder-replay");
+      if (rp) rp.onclick = () => chapterReplayRun(ch);
+    } else {
+      box.innerHTML = `<div class="binder-locked-note">🔒 Finish this chapter's ticket to unlock the chapter check and the replay lab.</div>`;
+    }
+  }
   body.innerHTML = "";
   body.appendChild(reader);
 }

@@ -1,0 +1,41 @@
+/* ===== Learn: debrief karta + aplikácia ===== */
+#notes-learn { margin: 0 0 12px; max-height: 46vh; overflow-y: auto; }
+.lrn-card { background: rgba(76,194,255,.07); border: 1px solid rgba(76,194,255,.28); border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.5; }
+.lrn-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); }
+.lrn-skill { font-size: 10.5px; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,.08); color: var(--ink); white-space: nowrap; }
+.lrn-title { font-size: 16px; font-weight: 700; margin: 6px 0; color: var(--ink); }
+.lrn-new { font-size: 10px; background: #2e9e5b; color: #fff; padding: 1px 6px; border-radius: 8px; vertical-align: middle; }
+.lrn-card p, .lrn-item p { margin: 6px 0; }
+.lrn-card ul, .lrn-item ul { margin: 4px 0 6px 18px; padding: 0; }
+.lrn-card details, .lrn-item { margin: 6px 0; }
+.lrn-card summary, .lrn-item summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.lrn-card code, .lrn-item code, .lrn-step code { background: rgba(0,0,0,.35); padding: 1px 5px; border-radius: 4px; font-family: Consolas, monospace; font-size: 12px; }
+.lrn-check { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(255,255,255,.15); }
+.lrn-q { font-weight: 600; margin-bottom: 6px; }
+.lrn-done { color: #54e8b1; font-weight: 400; font-size: 11px; }
+.lrn-opts { display: grid; gap: 6px; }
+.lrn-opt { text-align: left; font-family: inherit; font-size: 12.5px; color: var(--ink); background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.lrn-opt:hover:not(:disabled) { background: rgba(76,194,255,.14); }
+.lrn-opt.ok { border-color: #2e9e5b; background: rgba(46,158,91,.22); }
+.lrn-opt.bad { border-color: #c42b1c; background: rgba(196,43,28,.2); }
+.lrn-fb { margin-top: 6px; font-size: 12.5px; min-height: 1em; }
+/* Learn app */
+.lrn-app { display: flex; flex-direction: column; height: 100%; }
+.lrn-tabs { display: flex; gap: 4px; padding: 8px 10px 0; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+.lrn-tab { background: transparent; border: none; color: var(--muted); padding: 7px 12px; border-radius: 6px 6px 0 0; cursor: pointer; font-family: inherit; font-size: 12.5px; }
+.lrn-tab.active { color: var(--ink); background: rgba(255,255,255,.08); border-bottom: 2px solid var(--accent); }
+.lrn-pane { padding: 12px 16px; overflow-y: auto; flex: 1; font-size: 13px; line-height: 1.5; }
+.lrn-item { background: rgba(255,255,255,.04); border-radius: 8px; padding: 8px 12px; }
+.lrn-item.locked { opacity: .55; }
+.lrn-item summary { display: flex; justify-content: space-between; gap: 8px; }
+.lrn-lock, .lrn-sim { color: var(--muted); font-size: 12px; }
+.lrn-step { display: grid; grid-template-columns: minmax(130px, 32%) 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+.lrn-skillrow { display: grid; grid-template-columns: 1fr 120px 80px; gap: 10px; align-items: center; padding: 6px 0; }
+.lrn-bar { height: 8px; background: rgba(255,255,255,.1); border-radius: 4px; overflow: hidden; }
+.lrn-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), #54e8b1); }
+@media (max-width: 600px) { .lrn-step { grid-template-columns: 1fr; gap: 2px; } .lrn-skillrow { grid-template-columns: 1fr 70px 60px; } }
+
+/* ===== kvíz po kapitole + replay lab ===== */
+.binder-extras { margin: 14px 0 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.binder-locked-note { font-size: 12.5px; color: var(--muted); }
+.cq-answers { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }

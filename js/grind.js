@@ -21,6 +21,15 @@ function grindLogin(first, last) {
     .replace(/[^a-z.]/g, "").slice(0, 20);
 }
 
+/* deterministické pomocníčky pre nové druhy ticketov (musia dať rovnaký výsledok po načítaní save-u) */
+function grindKb(p) { return "KB50" + (30000 + (p.id % 9000)); }
+function grindDns(p) { return { name: "portal" + (p.id % 90 + 10), ip: "10.0.0." + (20 + (p.id % 60)) }; }
+function grindBackupJob(p) {
+  const jobs = [["FILE01", "volume shadow copy timeout"], ["MAIL01", "target disk full"], ["SQL01", "snapshot lock held by another process"]];
+  const j = jobs[p.id % jobs.length];
+  return { job: j[0], reason: j[1] };
+}
+
 /* ---------- definície druhov ticketov ---------- */
 /* check(params)(srv) → bool; setup(params) pripraví stav servera */
 const GRIND_KINDS = {
@@ -191,6 +200,92 @@ const GRIND_KINDS = {
         ],
         setup(p, srv) { if (!srv.wds[p.pc]) srv.wds[p.pc] = { deployed: false, joined: false }; srv.wds[p.pc].deployed = false; srv.wds[p.pc].joined = false; },
         check(p, srv) { const w = srv.wds[p.pc]; return !!w && w.deployed === true && w.joined === true; },
+      };
+    },
+  },
+  /* ---- SECURITY HYGIENE (patching, MFA, policy, DNS, backups) ---- */
+  patch: {
+    tier: 1, prio: "HIGH", xp: 50, sla: 45,
+    make(p) {
+      const kb = grindKb(p);
+      return {
+        subject: `Security update ${kb} missing on ${p.pc} (vulnerability scan)`,
+        body: `The vulnerability scanner flagged ${p.pc}: a critical Windows security update (${kb}) is not installed. Unpatched machines are the first thing attackers look for.\n— Security scanner`,
+        sop: [
+          `See what is pending: <code>get-hotfix ${p.pc}</code>`,
+          `Windows Update must be running: <code>get-service wuauserv</code> (start it if STOPPED)`,
+          `Install the update: <code>install-patch ${kb} ${p.pc}</code>`,
+          `Resolve: <code>resolve ${p.id}</code>`,
+        ],
+        setup(p, srv) { srv.patches[p.pc] = { kb: grindKb(p), title: "Cumulative Security Update", installed: false }; },
+        check(p, srv) { const x = srv.patches[p.pc]; return !!x && x.installed === true; },
+      };
+    },
+  },
+  mfa: {
+    tier: 1, prio: "NORMAL", xp: 45, sla: 45,
+    make(p) {
+      return {
+        subject: `New phone — authenticator app is empty (${p.full})`,
+        body: `I got a new phone and now I can't pass the MFA prompt, so I can't sign in at all. Please reset it. (Verified with my manager: ${p.dept} lead says it's really me.)\n— ${p.full}`,
+        sop: [
+          `Check the state: <code>get-mfa ${p.user}</code>`,
+          `Social-engineering check: the manager confirmation is in the ticket — in real life you would call back on a KNOWN number first.`,
+          `Reset it: <code>reset-mfa ${p.user}</code>`,
+          `Resolve: <code>resolve ${p.id}</code>`,
+        ],
+        setup(p, srv) { srv.mfa[p.user] = { reset: false }; },
+        check(p, srv) { const m = srv.mfa[p.user]; return !!m && m.reset === true; },
+      };
+    },
+  },
+  gpo: {
+    tier: 2, prio: "NORMAL", xp: 60, sla: 50,
+    make(p) {
+      return {
+        subject: `Screen-lock policy is not applied on ${p.pc}`,
+        body: `Compliance audit: ${p.pc} does not enforce the 5-minute screen lock Group Policy. An unlocked, unattended PC is an open door.\n— Compliance`,
+        sop: [
+          `Inspect the policy result: <code>get-gpresult ${p.pc}</code>`,
+          `Force a refresh: <code>gpupdate /force ${p.pc}</code>`,
+          `Verify and resolve: <code>resolve ${p.id}</code>`,
+        ],
+        setup(p, srv) { srv.gpo[p.pc] = { policy: "Screen lock after 5 min (GPO-SEC-12)", applied: false }; },
+        check(p, srv) { const g = srv.gpo[p.pc]; return !!g && g.applied === true; },
+      };
+    },
+  },
+  dns: {
+    tier: 2, prio: "HIGH", xp: 60, sla: 45,
+    make(p) {
+      const d = grindDns(p);
+      return {
+        subject: `Intranet portal "${d.name}" not reachable by name`,
+        body: `The new ${p.dept} portal works by IP (${d.ip}) but not by name: "${d.name}.pixlcorp.local" says the name does not exist.\n— ${p.full}`,
+        sop: [
+          `Look the name up: <code>get-dnsrecord ${d.name}</code>`,
+          `Create the A record: <code>add-dnsrecord ${d.name} ${d.ip}</code>`,
+          `Verify and resolve: <code>resolve ${p.id}</code>`,
+        ],
+        setup(p, srv) { delete srv.dns[d.name]; },
+        check(p, srv) { return srv.dns[d.name] === d.ip; },
+      };
+    },
+  },
+  backup: {
+    tier: 2, prio: "CRITICAL", xp: 70, sla: 45,
+    make(p) {
+      const j = grindBackupJob(p);
+      return {
+        subject: `Backup job ${j.job} FAILED last night`,
+        body: `Nightly backup ${j.job} failed (${j.reason}). If ransomware hits today, we have no clean restore point. Fix it before it matters.\n— Backup monitor`,
+        sop: [
+          `Check the jobs: <code>get-backup</code>`,
+          `Re-run the failed job: <code>start-backup ${j.job}</code>`,
+          `Verify and resolve: <code>resolve ${p.id}</code>`,
+        ],
+        setup(p, srv) { srv.backups[j.job] = { ok: false, reason: j.reason }; },
+        check(p, srv) { const b = srv.backups[j.job]; return !!b && b.ok === true; },
       };
     },
   },
@@ -419,8 +514,12 @@ function makeGrindTicket(forceKind) {
   const last = GRIND_LAST[Math.floor(Math.random() * GRIND_LAST.length)];
   const full = `${first} ${last}`;
   const login = grindLogin(first, last);
-  const user = GRIND_USERS[Math.floor(Math.random() * GRIND_USERS.length)];
+  // len účty, ktoré na serveri naozaj existujú (petra.nova vznikne až po onboarding tickete #1101)
+  const usable = GRIND_USERS.filter((u) => state.server.users[u]);
+  const userPool = usable.length ? usable : ["marek"];
+  const user = userPool[Math.floor(Math.random() * userPool.length)];
   const group = GRIND_GROUPS[Math.floor(Math.random() * GRIND_GROUPS.length)];
+  if (!state.server.groups[group]) state.server.groups[group] = [];   // skupina musí existovať, inak je ticket nevyriešiteľný
   const dept = GRIND_DEPTS[Math.floor(Math.random() * GRIND_DEPTS.length)];
   const pc = GRIND_PCS[Math.floor(Math.random() * GRIND_PCS.length)];
   const badIp = GRIND_BADIPS[Math.floor(Math.random() * GRIND_BADIPS.length)];

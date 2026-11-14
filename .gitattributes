@@ -1,0 +1,10 @@
+# Jednotné konce riadkov: v repozitári vždy LF, kódovanie UTF-8 (bez BOM).
+* text=auto eol=lf
+*.js   text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+# minifikované / vendorované knižnice sa nikdy nepreformátujú
+js/three.min.js  -text -diff linguist-vendored
+js/vendor/**     -text -diff linguist-vendored

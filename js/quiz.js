@@ -58,7 +58,8 @@ const APLUS_QUIZ = {
   ],
 };
 
-const quizState = { i: 0, score: 0, active: null, picked: null };
+const quizState = { i: 0, score: 0, active: null, picked: null, order: [] };
+
 
 function quizOpen(key) {
   const def = APLUS_QUIZ;
@@ -78,11 +79,13 @@ function quizShow() {
   document.getElementById("quiz-q").textContent = `Question ${quizState.i + 1}/${def.questions.length}: ${q.q}`;
   const box = document.getElementById("quiz-answers");
   box.innerHTML = "";
-  q.a.forEach((ans, i) => {
+  quizState.order = shuffleIdx(q.a.length);      // order[pozícia] = pôvodný index odpovede
+  quizState.order.forEach((orig) => {
     const b = document.createElement("button");
     b.className = "quiz-answer";
-    b.textContent = ans;
-    b.onclick = () => quizPick(i, b);
+    b.textContent = q.a[orig];
+    b.dataset.orig = String(orig);
+    b.onclick = () => quizPick(orig, b);
     box.appendChild(b);
   });
   document.getElementById("quiz-next").disabled = true;
@@ -97,7 +100,7 @@ function quizPick(i, btn) {
     quizState.score++;
   } else {
     btn.classList.add("wrong");
-    document.querySelectorAll(".quiz-answer")[q.correct].classList.add("correct");
+    document.querySelectorAll(".quiz-answer").forEach((b) => { if (Number(b.dataset.orig) === q.correct) b.classList.add("correct"); });
   }
   document.getElementById("quiz-next").disabled = false;
 }

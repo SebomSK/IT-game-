@@ -290,6 +290,14 @@ function openNotes(t) {
   ta.value = state.notes[t.id] || "";
   overlay.classList.remove("hidden");
   ta.dataset.ticket = t.id;
+  // vzdelávací debrief: čo si práve spravil a ako to vyzerá v reálnej firme
+  const box = document.getElementById("notes-learn");
+  if (box && typeof learn !== "undefined") {
+    box.innerHTML = learn.debriefHtml(t);
+    learn.bindCard(box);
+    learn.markSeen(t);
+    saveGame();
+  }
   ta.focus();
 }
 
@@ -395,6 +403,7 @@ function onTicketResolved(t) {
   renderTopbar();
   openNotes(t);
   dorisArcResolvedMaybe();
+  try { onTicketReputation(t); } catch (e) { console.error("rep:", e); }
   checkAchievements();
 }
 
@@ -429,6 +438,7 @@ setInterval(() => {
       state.stats.slaMiss++;
       saveGame();
       SFX.alarm();
+      try { onSlaMiss(t); } catch (e) { console.error("sla:", e); }
       toast(`⏰ Ticket #${id} is OVER SLA! XP bonus halved.`, "toast-danger");
       termPrint(`⏰ Ticket #${id} is OVER SLA! XP bonus halved. Solve it fast.`, "t-err");
       renderTickets();
@@ -603,6 +613,12 @@ if (mmRoot) {
       sndBtn.textContent = muted ? "OFF" : "ON";
       if (!muted) SFX.click();
     });
+  }
+  const volSlider = document.getElementById("mm-volume");
+  if (volSlider) {
+    volSlider.value = Math.round(SFX.getVolume() * 100);
+    volSlider.addEventListener("input", () => SFX.setVolume(volSlider.value / 100));
+    volSlider.addEventListener("change", () => SFX.click());
   }
   menuShow();
 }

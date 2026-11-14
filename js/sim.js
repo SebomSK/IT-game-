@@ -65,11 +65,23 @@ function runCommand(raw) {
     case "add-computer":    cmdAddComputer(args); break;
     case "eventlog":        cmdEventlog(args); break;
     case "block-ip":        cmdBlockIp(args); break;
+    case "gpupdate":        cmdGpupdate(args); break;
+    case "get-gpresult":    cmdGpResult(args); break;
+    case "get-dnsrecord":   cmdGetDns(args); break;
+    case "add-dnsrecord":   cmdAddDns(args); break;
+    case "get-backup":      cmdGetBackup(args); break;
+    case "start-backup":    cmdStartBackup(args); break;
+    case "get-hotfix":      cmdGetHotfix(args); break;
+    case "install-patch":   cmdInstallPatch(args); break;
+    case "get-mfa":         cmdGetMfa(args); break;
+    case "reset-mfa":       cmdResetMfa(args); break;
     case "tickets":         cmdTickets(); break;
     case "resolve":         cmdResolve(args); break;
     case "escalate":        cmdEscalate(args); break;
     case "reboot":          cmdReboot(args); break;
     case "stats":           cmdStats(); break;
+    case "explain":         learn.explain(args.join(" ")).forEach((l, i) => termPrint(l, i === 0 ? "t-warn" : "")); break;
+    case "learn":           termPrint("🎓 Open the Learn app on the desktop (lessons, method, real-world commands, glossary).", "t-warn"); break;
     case "sudo":            termPrint("sudo? This isn't Linux. But I respect the courage. 😄", "t-dim"); break;
     case "coffee":          termPrint("☕ +1 coffee. Productivity +5. Doris wants one too.", "t-dim"); break;
     case "exit":
@@ -168,6 +180,16 @@ function cmdGetProcess() {
 
 /* Get-Help <command> — PS help pre jednotlivé cmdlety */
 const PS_HELP = {
+  "gpupdate": "gpupdate /force <PC>\nForces a Group Policy refresh on a workstation.",
+  "get-gpresult": "Get-GPResult <PC>\nShows which policies are applied on a PC.",
+  "get-dnsrecord": "Get-DnsRecord [name]\nLists or looks up A records in pixlcorp.local.",
+  "add-dnsrecord": "Add-DnsRecord <name> <IPv4>\nCreates an A record.",
+  "get-backup": "Get-Backup\nShows backup job health.",
+  "start-backup": "Start-Backup <job>\nRe-runs a backup job.",
+  "get-hotfix": "Get-Hotfix <PC>\nShows pending/installed security updates.",
+  "install-patch": "Install-Patch <KB> <PC>\nInstalls a security update (needs the wuauserv service running).",
+  "get-mfa": "Get-Mfa <user>\nShows MFA registration state.",
+  "reset-mfa": "Reset-Mfa <user>\nClears a lost MFA device. Verify identity first!",
   "unlock-adaccount": "Unlock-ADAccount [-Identity] <user>\nUnlocks an AD account. Does NOT reset the password.",
   "set-adaccountpassword": "Set-ADAccountPassword [-Identity] <user> [-NewPassword] <pass>\nResets a user's password. Min 8 chars (complexity policy).",
   "add-adgroupmember": "Add-ADGroupMember [-Identity] <group> [-Members] <user>\nAdds a user to a group. Argument order: group first!",
@@ -236,6 +258,12 @@ function cmdHelp() {
     ["eventlog security|system", "view logs"],
     ["block-ip <IP>",        "firewall rule"],
     ["reboot <PC>",          "reboot a workstation"],
+    ["gpupdate /force <PC>", "re-apply Group Policy"],
+    ["get-dnsrecord / add-dnsrecord", "DNS records (name → IP)"],
+    ["get-backup / start-backup <job>", "backup jobs"],
+    ["get-hotfix <PC> / install-patch <KB> <PC>", "security patches"],
+    ["get-mfa / reset-mfa <user>", "multi-factor authentication"],
+    ["explain [command]",    "how this looks in the real world"],
     ["stats",                "your career in numbers"],
     ["tickets",              "list of tickets"],
     ["resolve <ID>",         "mark a ticket as resolved"],
@@ -310,6 +338,9 @@ function cmdType(args) {
   } else if (f.endsWith(".book")) {
     termPrint(`📘 '${args[0]}' is an e-book from the IT Library.`, "t-ok");
     termPrint("Open it comfortably in the Library app on the desktop (double-click the icon).", "t-warn");
+  } else if (typeof FILE_TEXT !== "undefined" && FILE_TEXT[args[0]] && !args[0].endsWith(".docx")) {
+    termPrint(FILE_TEXT[args[0]], "t-dim");
+    if (typeof evidenceRead === "function") evidenceRead(args[0]);
   } else {
     termPrint(`File '${args[0]}' doesn't exist (or it's a .docx the terminal can't read).`, "t-err");
   }
@@ -712,6 +743,7 @@ function cmdResolve(args) {
     onTicketResolved(t);
   } else {
     termPrint(`✘ Ticket #${id} is NOT resolved yet. Check the SOP procedure in the ticket detail.`, "t-err");
+    if (typeof learn !== "undefined") learn.onFail(t);
     if (typeof SFX !== "undefined") SFX.err();
   }
 }
@@ -733,4 +765,112 @@ function cmdEscalate(args) {
   termPrint(`⬆ Ticket #${id} escalated to Tier 2 (+${gain} XP).`, "t-ok");
   termPrint("This is standard practice — knowing your limits is a professional virtue.", "t-dim");
   onTicketEscalated(t);
+}
+
+/* ================= SECURITY HYGIENE: GPO, DNS, backup, patching, MFA ================= */
+function pcArg(raw) { return String(raw || "").toUpperCase(); }
+
+function cmdGpupdate(args) {
+  const pc = pcArg(args.find((a) => !a.startsWith("/")));
+  if (!pc) { termPrint("Usage: gpupdate /force <PC>", "t-err"); return; }
+  if (!hasOwnKey(state.server.gpo, pc)) { termPrint(`Machine '${pc}' has no pending policy issues.`, "t-dim"); return; }
+  const g = state.server.gpo[pc];
+  termPrint(`Updating policy on ${pc}...`, "t-warn");
+  g.applied = true;
+  saveGame();
+  termPrint("Computer Policy update has completed successfully.");
+  termPrint(`[OK] ${g.policy} is now applied on ${pc}.`, "t-ok");
+}
+
+function cmdGpResult(args) {
+  const pc = pcArg(args[0]);
+  if (!hasOwnKey(state.server.gpo, pc)) { termPrint(`${pc || "(no PC)"}: all policies applied.`, "t-ok"); return; }
+  const g = state.server.gpo[pc];
+  termPrint(`RSOP for ${pc}`, "t-warn");
+  termPrint(`  ${g.policy}: ${g.applied ? "APPLIED" : "NOT APPLIED (last refresh failed)"}`, g.applied ? "t-ok" : "t-err");
+  if (!g.applied) termPrint("💡 Re-apply it with: gpupdate /force " + pc, "t-warn");
+}
+
+function cmdGetDns(args) {
+  const name = String(args[0] || "").toLowerCase();
+  const recs = state.server.dns;
+  if (!name) {
+    termPrint("DNS zone pixlcorp.local:", "t-warn");
+    const keys = Object.keys(recs);
+    if (!keys.length) termPrint("  (no custom records)", "t-dim");
+    keys.forEach((k) => termPrint(`  ${k.padEnd(14)} A  ${recs[k]}`));
+    return;
+  }
+  if (hasOwnKey(recs, name)) termPrint(`${name}.pixlcorp.local  A  ${recs[name]}`, "t-ok");
+  else termPrint(`DNS name does not exist: ${name}.pixlcorp.local`, "t-err");
+}
+
+function cmdAddDns(args) {
+  const name = String(args[0] || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
+  const ip = String(args[1] || "");
+  if (!name || !/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) { termPrint("Usage: add-dnsrecord <name> <IPv4>", "t-err"); return; }
+  state.server.dns[name] = ip;
+  saveGame();
+  termPrint(`[OK] ${name}.pixlcorp.local → ${ip} (A record created)`, "t-ok");
+}
+
+function cmdGetBackup(args) {
+  const jobs = state.server.backups;
+  const keys = Object.keys(jobs);
+  if (!keys.length) { termPrint("All backup jobs healthy (last run OK).", "t-ok"); return; }
+  termPrint("BACKUP JOBS:", "t-warn");
+  keys.forEach((k) => termPrint(`  ${k.padEnd(14)} ${jobs[k].ok ? "OK" : "FAILED — " + jobs[k].reason}`, jobs[k].ok ? "t-ok" : "t-err"));
+  if (keys.some((k) => !jobs[k].ok)) termPrint("💡 Re-run a failed job: start-backup <job>", "t-warn");
+}
+
+function cmdStartBackup(args) {
+  const job = String(args[0] || "").toUpperCase();
+  if (!hasOwnKey(state.server.backups, job)) { termPrint(`Unknown backup job '${job}'. Try get-backup.`, "t-err"); return; }
+  state.server.backups[job].ok = true;
+  saveGame();
+  termPrint(`Starting ${job}...`, "t-warn");
+  termPrint("Snapshot created · verified · offsite copy queued.");
+  termPrint(`[OK] ${job} completed successfully.`, "t-ok");
+}
+
+function cmdGetHotfix(args) {
+  const pc = pcArg(args[0]);
+  if (!hasOwnKey(state.server.patches, pc)) { termPrint(`${pc || "(no PC)"}: fully patched.`, "t-ok"); return; }
+  const p = state.server.patches[pc];
+  termPrint(`Updates for ${pc}:`, "t-warn");
+  termPrint(`  ${p.kb}  ${p.title}  ${p.installed ? "INSTALLED" : "PENDING (security update)"}`, p.installed ? "t-ok" : "t-err");
+}
+
+function cmdInstallPatch(args) {
+  const kb = String(args[0] || "").toUpperCase();
+  const pc = pcArg(args[1]);
+  if (!kb || !pc) { termPrint("Usage: install-patch <KB> <PC>", "t-err"); return; }
+  if (!hasOwnKey(state.server.patches, pc) || state.server.patches[pc].kb !== kb) {
+    termPrint(`${kb} is not pending on ${pc}. Check get-hotfix ${pc}.`, "t-err"); return;
+  }
+  if (state.server.services.wuauserv !== "RUNNING") {
+    termPrint("Windows Update service (wuauserv) is not running. Start it first.", "t-err"); return;
+  }
+  state.server.patches[pc].installed = true;
+  saveGame();
+  termPrint(`Installing ${kb} on ${pc}...`, "t-warn");
+  termPrint(`[OK] ${kb} installed. Reboot recommended.`, "t-ok");
+}
+
+function cmdGetMfa(args) {
+  const u = String(args[0] || "").toLowerCase();
+  if (!safeUserKey(u)) { termPrint("Usage: get-mfa <user>", "t-err"); return; }
+  const m = hasOwnKey(state.server.mfa, u) ? state.server.mfa[u] : null;
+  if (!m) { termPrint(`${u}: MFA enrolled (authenticator app).`, "t-ok"); return; }
+  termPrint(`${u}: MFA ${m.reset ? "RESET — user must re-enroll on next sign-in" : "device lost / NOT usable"}`, m.reset ? "t-ok" : "t-err");
+}
+
+function cmdResetMfa(args) {
+  const u = String(args[0] || "").toLowerCase();
+  if (!safeUserKey(u)) { termPrint("Usage: reset-mfa <user>", "t-err"); return; }
+  if (!hasOwnKey(state.server.mfa, u)) { termPrint(`${u} has no MFA problem on record.`, "t-dim"); return; }
+  state.server.mfa[u].reset = true;
+  saveGame();
+  termPrint(`[OK] MFA registration for ${u} cleared. They will re-enroll at next sign-in.`, "t-ok");
+  termPrint("🔐 Security note: verify the user's identity (callback / manager) BEFORE resetting MFA.", "t-warn");
 }

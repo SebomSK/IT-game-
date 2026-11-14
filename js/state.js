@@ -29,10 +29,18 @@ const state = {
   branch: null,               // "admin" | "soc" — špecializácia od ranku 3
   achievements: [],           // ids dosiahnutých achievementov
   keeper: { clues: 0, done: false },  // keeper.ps1 side-quest
+  mail: { flagged: [], archived: [], replied: [], replies: {}, read: [], extra: [], phish: {} },  // kľúče "flavor:2" / "ticket:1042"
+  evidence: [],               // nájdené dôkazy k nočnej záhade (Files D:\\)
+  rep: 70,                    // dôvera oddelení (0-100): SLA a spokojnosť používateľov
+  siem: { done: 0, correct: 0, streak: 0, best: 0 },   // SOC konzola (triáž alertov)
+  learn: { seen: [], quizzed: [], mistakes: {}, skills: {} },   // vzdelávací pokrok: videné lekcie, chyby, zručnosti
   promotedTo: 0,
   tutorialDone: false,
-  story: { mystery1: false, introDone: false, nightEvidence: false, dorisStarted: false, dorisArc: false, dorisTicket: null },
+  deskSeen: false,            // desktop už bol raz otvorený (tutoriál sa neopakuje)
+  story: { siemIntro: false, mystery1: false, introDone: false, nightEvidence: false, dorisStarted: false, dorisArc: false, dorisTicket: null },
   stats: { startedAt: 0, slaMiss: 0, notesGood: 0, totalMin: 0, reviews: 0 },
+  chapterQuiz: {},            // kľúč kapitoly ("c<index>") -> najlepšie skóre v kvíze po kapitole
+  replays: 0,                 // koľko "replay" ticketov hráč spustil
   server: {
     users: {
       doris:       { active: false, changed: false, desc: "Doris Pemberton (Office Admin)" },
@@ -45,6 +53,7 @@ const state = {
       Marketing:  ["marek"],
       Accounting: ["jana"],
       Helpdesk:   ["pavel"],
+      Sales:      [],
     },
     services: {
       spooler:  "STOPPED",
@@ -72,6 +81,7 @@ const state = {
     },
     departed: [],
     blocked: [],
+    gpo: {}, dns: {}, backups: {}, patches: {}, mfa: {},   // security hygiene tickety
     attacksBlocked: false,
   },
 };
@@ -103,6 +113,16 @@ function loadGame() {
     Object.assign(state, candidate);
     return true;
   } catch (e) { return false; }
+}
+
+/* Fisher–Yates — odpovede sa pri každom zobrazení premiešajú, takže sa kvíz nedá naučiť na pamäť */
+function shuffleIdx(n) {
+  const a = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 /* escapuje HTML — všetko používateľské, čo ide do innerHTML, musí ísť cez escHtml */
@@ -176,8 +196,12 @@ function sanitizeSaveArray(key, current, incoming) {
   if (["resolved", "escalated", "taken", "arrived"].includes(key)) {
     return values.filter(Number.isSafeInteger);
   }
-  if (["achievements", "departed", "blocked"].includes(key)) {
+  if (["achievements", "departed", "blocked", "flagged", "archived", "replied", "read", "evidence", "seen", "quizzed"].includes(key)) {
     return values.filter((item) => typeof item === "string");
+  }
+  /* členovia AD skupín (aj prázdna skupina po načítaní musí zostať poľom reťazcov) */
+  if (["Marketing", "Accounting", "Helpdesk", "Sales"].includes(key)) {
+    return values.filter((item) => typeof item === "string" && /^[a-z0-9._-]{1,32}$/.test(item));
   }
   return [];
 }
@@ -188,6 +212,9 @@ function sanitizeDynamicMapEntry(mapName, key, value) {
   if (mapName === "timestamp" && Number.isFinite(value)) return Math.max(0, Math.min(value, 8640000000000000));
   if (mapName === "boolean" && typeof value === "boolean") return value;
   if (mapName === "note" && typeof value === "string") return value.slice(0, MAX_SAVE_STRING_LENGTH);
+  if (mapName === "reply" && /^[a-z]{3,10}:\d{1,10}$/.test(key) && typeof value === "string") return value.slice(0, 600);
+  if (mapName === "chapterquiz" && /^c\d{1,3}$/.test(key) && Number.isFinite(value)) return Math.max(0, Math.min(Math.floor(value), 10));
+  if (mapName === "counter" && /^[a-z0-9_-]{1,40}$/.test(key) && Number.isFinite(value)) return Math.max(0, Math.min(value, 100000));
   if (mapName === "phoneState" && isPlainObject(value) &&
       Number.isSafeInteger(value.step) && Number.isSafeInteger(value.mistakes)) {
     return {
@@ -237,7 +264,7 @@ function deepMerge(target, src) {
             users: "users", wds: "wds", mailbox: "mailbox",
             takenAt: "timestamp", deadlines: "timestamp",
             overdue: "boolean", phoneDone: "boolean",
-            notes: "note", phoneState: "phoneState",
+            notes: "note", phoneState: "phoneState", chapterQuiz: "chapterquiz", replies: "reply", mistakes: "counter", skills: "counter",
           }[k] || null;
           merge(current, incoming, nextDynamicMap);
         }

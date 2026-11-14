@@ -5,7 +5,6 @@
    1. WIN11 NOTIFICATIONS (stack vpravo dole + bell + center)
    ============================================================ */
 const notifLog = [];   // {icon,title,body,ts,read}
-let notifRestore = null; // okná minimalizované cez Show desktop (obnova)
 
 function notify(o) {
   /* o: { icon, title, body, tag?, cls? } */
@@ -328,7 +327,7 @@ function saveImport(file) {
   // Show desktop
   document.getElementById("btn-showdesktop")?.addEventListener("click", () => {
     SFX.click();
-    if (typeof os.minimizeAll === "function") os.showDesktop();
+    os.showDesktop();
   });
   // klik mimo notif center ho zavrie
   document.getElementById("desktop-view")?.addEventListener("mousedown", (e) => {
