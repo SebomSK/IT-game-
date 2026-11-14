@@ -1761,3 +1761,11 @@ button:active:not(:disabled) { transform: translateY(1px); }
 .privacy-back { display: inline-block; margin-bottom: 12px; }
 .privacy-updated, .privacy-disclaimer { color: var(--muted) !important; font-size: 13px; }
 
+
+/* Auth box (intro overlay) */
+.auth-box { margin: 0 0 14px; }
+.auth-box input { display: block; width: 100%; box-sizing: border-box; margin: 0 0 8px; padding: 9px 10px; font: inherit; }
+.auth-row { display: flex; gap: 8px; }
+.auth-row .btn-primary { flex: 1; }
+.auth-link { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; margin-top: 6px; }
+.auth-box .hidden { display: none; }
