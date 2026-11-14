@@ -72,6 +72,22 @@
       mail, helpdesk app, terminal, file explorer.</p>
       <p class="hint">💡 Story, curriculum and a fake OS — all in one.</p>
     </div>
+    <div id="auth-box" class="auth-box">
+      <div id="auth-form">
+        <input id="auth-email" type="email" autocomplete="email" maxlength="254" placeholder="Email">
+        <input id="auth-pass" type="password" autocomplete="current-password" maxlength="72" placeholder="Password (min. 8 chars)">
+        <div class="auth-row">
+          <button id="btn-login" class="btn-primary" type="button">LOG IN</button>
+          <button id="btn-signup" class="btn-primary" type="button">SIGN UP</button>
+        </div>
+        <button id="btn-reset" class="auth-link" type="button">Forgot password?</button>
+      </div>
+      <div id="auth-who" class="hidden">
+        Signed in as <b id="auth-user"></b>
+        <button id="btn-logout" class="auth-link" type="button">Log out</button>
+      </div>
+      <p id="auth-status" class="hint" role="status"></p>
+    </div>
     <button id="btn-clockin" class="btn-primary">⏰ CLOCK IN</button>
   </div>
 </div>
@@ -348,6 +364,9 @@
   <div id="mail-list"></div>
 </div>
 
+<script src="js/vendor/supabase-2.119.0.js"></script>
+<script src="js/config.js?v=12"></script>
+<script src="js/auth.js?v=12"></script>
 <script src="js/state.js?v=12"></script>
 <script src="js/ranks.js?v=12"></script>
 <script src="js/tickets.js?v=12"></script>

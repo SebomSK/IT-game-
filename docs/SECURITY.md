@@ -143,3 +143,12 @@ The earlier report did not cover imported ticket data, the current hosted deploy
 - There is no login system, password handling, database, API, file upload beyond local JSON save import, or payment flow. Authentication, SQL/API security, rate limiting, MFA, and account recovery therefore remain not applicable. Do not collect or store plaintext passwords or send passwords through Discord. A future account feature requires a backend or managed auth provider and a new security review.
 - GitHub Pages HTTPS/HSTS is verified; custom response-header behavior, DDoS controls, availability SLAs, load testing, backup restoration, formal SAST/DAST, and a professional penetration test were not performed.
 - A factual technical privacy notice exists at `privacy.html`; no cookie banner was added because the app has no tracking cookies/analytics and uses localStorage for core game progress. Terms/cookie policies still require owner/legal review; publisher identity, jurisdiction, and age audience were not provided.
+
+
+## 9. Accounts and login log (added)
+
+- Accounts use Supabase Auth; passwords are hashed by Supabase and never readable by the owner. Never store or send plaintext passwords.
+- Emails live in `auth.users`; login IPs in `public.login_events` (RLS enabled, no policies, grants revoked from `anon`/`authenticated`). IP is written server-side by the `log-login` Edge Function, not by the browser.
+- The `service_role` key exists only in Supabase-managed function secrets. Only the public anon key is in `js/config.js`.
+- The disabled CLOCK IN button is a UX gate, not a security control; game progress is still client-side.
+- Sections 1, 5 and 6 above ("no accounts / no backend") are superseded by this section.

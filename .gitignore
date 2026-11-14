@@ -1,1 +1,7 @@
 ticketquest_backup_pre-security/
+
+# secrets - never commit
+.env
+.env.*
+supabase/.temp/
+*service_role*
