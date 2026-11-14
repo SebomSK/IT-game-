@@ -6,7 +6,7 @@ Inspired by Hack Vantage, but **free, in English, with a story and without a rea
 
 ## Play
 
-\[Play TicketQuest in your browser](https://sebomsk.github.io/CyberSecurity-Game/)
+[Play TicketQuest in your browser](https://sebomsk.github.io/CyberSecurity-Game/)
 
 [Privacy notice](privacy.html)
 
@@ -46,7 +46,7 @@ Join PIXL Corp, the boss asks for your name, you get tickets, you solve them in 
 
 ```
 IT Intern (240 XP) → Helpdesk Tier 1 (610 XP + A+ quiz) → Desktop Support Tier 2
-        └── Phase 2+: └→ Jr. Sysadmin → Sysadmin → IT Operations Lead → \*\*Director of IT\*\*
+        └── Phase 2+: └→ Jr. Sysadmin → Sysadmin → IT Operations Lead → \\\*\\\*Director of IT\\\*\\\*
                       └→ SOC T1 → SOC T2 (IR)
 ```
 
@@ -63,7 +63,7 @@ css/style.css         — pixel-art/CRT style
 js/state.js           — state + saving (v2)
 js/ranks.js           — career ladder, salaries
 js/tickets.js         — 10 tickets + resolution conditions
-js/sim.js             — simulated Windows Server (\~25 commands)
+js/sim.js             — simulated Windows Server (\\\~25 commands)
 js/avatar.js          — pixel sprites (avatar generated from name)
 js/story.js           — PIXL Corp Saga story (intro, night scene, promotions)
 js/cutscene.js        — VN engine (typewriter, POV, WebAudio blips)
